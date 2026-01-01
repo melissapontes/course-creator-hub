@@ -43,14 +43,17 @@ export default function NewCoursePage() {
     category: '',
     level: 'INICIANTE' as 'INICIANTE' | 'INTERMEDIARIO' | 'AVANCADO',
     language: 'pt-BR',
+    price: '',
   });
 
   const createCourse = useMutation({
     mutationFn: async () => {
+      const { price, ...rest } = formData;
       const { data, error } = await supabase
         .from('courses')
         .insert({
-          ...formData,
+          ...rest,
+          price: price ? parseFloat(price) : 0,
           instructor_id: authUser!.id,
           status: 'RASCUNHO',
         })
@@ -176,21 +179,39 @@ export default function NewCoursePage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="language">Idioma</Label>
-                <Select
-                  value={formData.language}
-                  onValueChange={(value) => setFormData({ ...formData, language: value })}
-                >
-                  <SelectTrigger className="w-full sm:w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="es">Español</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="language">Idioma</Label>
+                  <Select
+                    value={formData.language}
+                    onValueChange={(value) => setFormData({ ...formData, language: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="price">Preço (R$)</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Deixe em branco ou 0 para curso gratuito
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,12 +65,16 @@ type CourseWithInstructor = {
 };
 
 export default function CourseCatalogPage() {
+  const { authUser } = useAuth();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [level, setLevel] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
   const [instructorNames, setInstructorNames] = useState<Record<string, string>>({});
+
+  // Use DashboardLayout if user is logged in, otherwise PublicLayout
+  const Layout = authUser ? DashboardLayout : PublicLayout;
 
   const { data: courses, isLoading } = useQuery({
     queryKey: ['public-courses'],
@@ -212,7 +218,7 @@ export default function CourseCatalogPage() {
   };
 
   return (
-    <PublicLayout>
+    <Layout>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -429,6 +435,6 @@ export default function CourseCatalogPage() {
           </Card>
         )}
       </div>
-    </PublicLayout>
+    </Layout>
   );
 }
