@@ -53,21 +53,19 @@ interface Section {
   id: string;
   course_id: string;
   title: string;
-  order_index: number;
+  order: number;
 }
 
 interface Lesson {
   id: string;
   section_id: string;
   title: string;
-  order_index: number;
-  content_type: 'VIDEO_UPLOAD' | 'YOUTUBE_LINK' | 'TEXTO' | 'QUIZ';
+  order: number;
+  content_type: string;
   video_file_url: string | null;
   youtube_url: string | null;
   duration_seconds: number | null;
   is_preview_free: boolean;
-  description: string | null;
-  text_content: string | null;
 }
 
 export default function CurriculumPage() {
@@ -85,11 +83,9 @@ export default function CurriculumPage() {
   const [sectionTitle, setSectionTitle] = useState('');
   const [lessonData, setLessonData] = useState({
     title: '',
-    content_type: 'YOUTUBE_LINK' as 'VIDEO_UPLOAD' | 'YOUTUBE_LINK' | 'TEXTO' | 'QUIZ',
+    content_type: 'YOUTUBE_LINK' as string,
     youtube_url: '',
     is_preview_free: false,
-    description: '',
-    text_content: '',
   });
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -117,7 +113,7 @@ export default function CurriculumPage() {
         .from('sections')
         .select('*')
         .eq('course_id', courseId)
-        .order('order_index');
+        .order('order');
       if (error) throw error;
       return data as Section[];
     },
@@ -134,7 +130,7 @@ export default function CurriculumPage() {
         .from('lessons')
         .select('*')
         .in('section_id', sectionIds)
-        .order('order_index');
+        .order('order');
       if (error) throw error;
       return data as Lesson[];
     },
@@ -144,11 +140,11 @@ export default function CurriculumPage() {
   // Create section
   const createSection = useMutation({
     mutationFn: async (title: string) => {
-      const maxOrder = sections?.length ? Math.max(...sections.map((s) => s.order_index)) : -1;
+      const maxOrder = sections?.length ? Math.max(...sections.map((s) => s.order)) : -1;
       const { error } = await supabase.from('sections').insert({
         course_id: courseId,
         title,
-        order_index: maxOrder + 1,
+        order: maxOrder + 1,
       });
       if (error) throw error;
     },
@@ -218,8 +214,6 @@ export default function CurriculumPage() {
         youtube_url: lessonData.content_type === 'YOUTUBE_LINK' ? lessonData.youtube_url : null,
         video_file_url: lessonData.content_type === 'VIDEO_UPLOAD' ? video_file_url : null,
         is_preview_free: lessonData.is_preview_free,
-        description: lessonData.description || null,
-        text_content: lessonData.content_type === 'TEXTO' ? lessonData.text_content : null,
       };
 
       if (lessonDialog.lesson) {
@@ -232,12 +226,12 @@ export default function CurriculumPage() {
       } else {
         // Create
         const sectionLessons = lessons?.filter((l) => l.section_id === lessonDialog.sectionId) || [];
-        const maxOrder = sectionLessons.length ? Math.max(...sectionLessons.map((l) => l.order_index)) : -1;
+        const maxOrder = sectionLessons.length ? Math.max(...sectionLessons.map((l) => l.order)) : -1;
         
         const { error } = await supabase.from('lessons').insert({
           ...lessonPayload,
           section_id: lessonDialog.sectionId,
-          order_index: maxOrder + 1,
+          order: maxOrder + 1,
         });
         if (error) throw error;
       }
@@ -276,8 +270,6 @@ export default function CurriculumPage() {
       content_type: lesson?.content_type || 'YOUTUBE_LINK',
       youtube_url: lesson?.youtube_url || '',
       is_preview_free: lesson?.is_preview_free || false,
-      description: lesson?.description || '',
-      text_content: lesson?.text_content || '',
     });
     setVideoFile(null);
     setLessonDialog({ open: true, sectionId, lesson });
@@ -285,7 +277,7 @@ export default function CurriculumPage() {
 
   const closeLessonDialog = () => {
     setLessonDialog({ open: false });
-    setLessonData({ title: '', content_type: 'YOUTUBE_LINK', youtube_url: '', is_preview_free: false, description: '', text_content: '' });
+    setLessonData({ title: '', content_type: 'YOUTUBE_LINK', youtube_url: '', is_preview_free: false });
     setVideoFile(null);
   };
 
@@ -623,22 +615,6 @@ export default function CurriculumPage() {
               </div>
             )}
 
-            {lessonData.content_type === 'TEXTO' && (
-              <div className="space-y-2">
-                <Label htmlFor="text-content">Conteúdo de Texto</Label>
-                <Textarea
-                  id="text-content"
-                  placeholder="Escreva o conteúdo da aula aqui..."
-                  value={lessonData.text_content}
-                  onChange={(e) => setLessonData({ ...lessonData, text_content: e.target.value })}
-                  rows={8}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Este texto será exibido para os alunos como conteúdo principal da aula.
-                </p>
-              </div>
-            )}
-
             {lessonData.content_type === 'QUIZ' && (
               <div className="p-4 bg-muted/50 rounded-lg text-center">
                 <HelpCircle className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
@@ -647,17 +623,6 @@ export default function CurriculumPage() {
                 </p>
               </div>
             )}
-
-            <div className="space-y-2">
-              <Label htmlFor="lesson-description">Descrição (opcional)</Label>
-              <Textarea
-                id="lesson-description"
-                placeholder="Descreva o conteúdo desta aula..."
-                value={lessonData.description}
-                onChange={(e) => setLessonData({ ...lessonData, description: e.target.value })}
-                rows={3}
-              />
-            </div>
 
             <div className="flex items-center gap-2">
               <input

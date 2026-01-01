@@ -75,7 +75,7 @@ export default function EditCoursePage() {
         subtitle: course.subtitle || '',
         description: course.description || '',
         category: course.category || '',
-        level: course.level || 'INICIANTE',
+        level: (course.level as 'INICIANTE' | 'INTERMEDIARIO' | 'AVANCADO') || 'INICIANTE',
         language: course.language || 'pt-BR',
         thumbnail_url: course.thumbnail_url || '',
       });
