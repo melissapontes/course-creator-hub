@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,12 +15,9 @@ import { toast } from 'sonner';
 export default function ProfilePage() {
   const { authUser, refreshUser } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const [profileData, setProfileData] = useState({
     full_name: '',
-    display_name: '',
-    bio: '',
     avatar_url: '',
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -31,15 +27,7 @@ export default function ProfilePage() {
     if (authUser) {
       setProfileData({
         full_name: authUser.profile?.full_name || '',
-        display_name:
-          authUser.role === 'PROFESSOR'
-            ? authUser.professorProfile?.display_name || ''
-            : authUser.studentProfile?.display_name || '',
-        bio: authUser.professorProfile?.bio || '',
-        avatar_url:
-          authUser.role === 'PROFESSOR'
-            ? authUser.professorProfile?.avatar_url || ''
-            : authUser.studentProfile?.avatar_url || '',
+        avatar_url: authUser.profile?.avatar_url || '',
       });
     }
   }, [authUser]);
@@ -68,46 +56,25 @@ export default function ProfilePage() {
         const fileName = `${authUser.id}/${Date.now()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('avatars')
+          .from('uploads')
           .upload(fileName, avatarFile, { upsert: true });
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+        const { data: urlData } = supabase.storage.from('uploads').getPublicUrl(fileName);
         avatar_url = urlData.publicUrl;
       }
 
-      // Update main profile
+      // Update profile
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ full_name: profileData.full_name })
-        .eq('user_id', authUser.id);
+        .update({ 
+          full_name: profileData.full_name,
+          avatar_url,
+        })
+        .eq('id', authUser.id);
 
       if (profileError) throw profileError;
-
-      // Update role-specific profile
-      if (authUser.role === 'PROFESSOR') {
-        const { error } = await supabase
-          .from('professor_profiles')
-          .update({
-            display_name: profileData.display_name,
-            bio: profileData.bio,
-            avatar_url,
-          })
-          .eq('user_id', authUser.id);
-
-        if (error) throw error;
-      } else if (authUser.role === 'ESTUDANTE') {
-        const { error } = await supabase
-          .from('student_profiles')
-          .update({
-            display_name: profileData.display_name,
-            avatar_url,
-          })
-          .eq('user_id', authUser.id);
-
-        if (error) throw error;
-      }
     },
     onSuccess: () => {
       refreshUser();
@@ -162,7 +129,7 @@ export default function ProfilePage() {
             <CardContent>
               <div className="flex items-center gap-6">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src={displayAvatar} alt={profileData.full_name} />
+                  <AvatarImage src={displayAvatar || undefined} alt={profileData.full_name} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                     {getInitials()}
                   </AvatarFallback>
@@ -211,19 +178,6 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="display_name">Nome de Exibição</Label>
-                <Input
-                  id="display_name"
-                  value={profileData.display_name}
-                  onChange={(e) => setProfileData({ ...profileData, display_name: e.target.value })}
-                  placeholder="Como você quer ser chamado"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Este nome será exibido publicamente
-                </p>
-              </div>
-
-              <div className="space-y-2">
                 <Label>Email</Label>
                 <Input value={authUser?.email || ''} disabled className="bg-muted" />
                 <p className="text-xs text-muted-foreground">
@@ -236,32 +190,12 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-muted-foreground" />
                   <span className="badge-primary">
-                    {authUser?.role === 'PROFESSOR' ? 'Professor' : 'Estudante'}
+                    {authUser?.role === 'PROFESSOR' ? 'Professor' : authUser?.role === 'ADMIN' ? 'Administrador' : 'Estudante'}
                   </span>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          {/* Bio (only for professors) */}
-          {authUser?.role === 'PROFESSOR' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Biografia</CardTitle>
-                <CardDescription>
-                  Conte um pouco sobre você e sua experiência
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  value={profileData.bio}
-                  onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                  placeholder="Escreva sobre sua experiência, formação e áreas de interesse..."
-                  rows={4}
-                />
-              </CardContent>
-            </Card>
-          )}
 
           {/* Submit */}
           <div className="flex justify-end gap-4">

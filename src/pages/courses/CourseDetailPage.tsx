@@ -1,18 +1,14 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { PublicLayout } from '@/components/layout/PublicLayout';
-import { CourseRating } from '@/components/lesson/CourseRating';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
-import { toast } from 'sonner';
 import {
   BookOpen,
-  Clock,
   GraduationCap,
   Globe,
   Play,
@@ -20,17 +16,16 @@ import {
   ChevronDown,
   ChevronRight,
   User,
-  CheckCircle,
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { authUser, user } = useAuth();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [instructorName, setInstructorName] = useState<string>('');
 
   const { data: course, isLoading: courseLoading } = useQuery({
     queryKey: ['public-course', id],
@@ -47,20 +42,21 @@ export default function CourseDetailPage() {
     enabled: !!id,
   });
 
-  const { data: instructor } = useQuery({
-    queryKey: ['instructor', course?.instructor_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('professor_profiles')
-        .select('*')
-        .eq('user_id', course!.instructor_id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!course?.instructor_id,
-  });
+  // Fetch instructor name from profiles
+  useEffect(() => {
+    if (course?.instructor_id) {
+      supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', course.instructor_id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setInstructorName(data.full_name);
+          }
+        });
+    }
+  }, [course?.instructor_id]);
 
   const { data: sections } = useQuery({
     queryKey: ['public-sections', id],
@@ -69,7 +65,7 @@ export default function CourseDetailPage() {
         .from('sections')
         .select('*')
         .eq('course_id', id)
-        .order('order_index');
+        .order('order');
 
       if (error) throw error;
       return data;
@@ -84,72 +80,14 @@ export default function CourseDetailPage() {
       const sectionIds = sections.map((s) => s.id);
       const { data, error } = await supabase
         .from('lessons')
-        .select('id, title, section_id, order_index, is_preview_free, duration_seconds, content_type')
+        .select('id, title, section_id, order, is_preview_free, duration_seconds, content_type')
         .in('section_id', sectionIds)
-        .order('order_index');
+        .order('order');
 
       if (error) throw error;
       return data;
     },
     enabled: !!sections?.length,
-  });
-
-  // Check enrollment
-  const { data: enrollment, isLoading: enrollmentLoading } = useQuery({
-    queryKey: ['enrollment', id, user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('enrollments')
-        .select('*')
-        .eq('course_id', id!)
-        .eq('user_id', user!.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id && !!user?.id,
-  });
-
-  // Get progress
-  const { data: lessonProgress } = useQuery({
-    queryKey: ['lesson-progress-count', id, user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('lesson_progress')
-        .select('lesson_id, completed')
-        .eq('course_id', id!)
-        .eq('user_id', user!.id);
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id && !!user?.id && !!enrollment,
-  });
-
-  const progressPercentage = useMemo(() => {
-    if (!lessons?.length || !lessonProgress) return 0;
-    const completedCount = lessonProgress.filter((p) => p.completed).length;
-    return Math.round((completedCount / lessons.length) * 100);
-  }, [lessons, lessonProgress]);
-
-  // Enroll mutation
-  const enrollMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from('enrollments').insert({
-        user_id: user!.id,
-        course_id: id!,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success('Matrícula realizada com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['enrollment', id] });
-    },
-    onError: (error: any) => {
-      console.error('Enrollment error:', error);
-      toast.error('Erro ao realizar matrícula');
-    },
   });
 
   const toggleSection = (sectionId: string) => {
@@ -214,8 +152,6 @@ export default function CourseDetailPage() {
     );
   }
 
-  const isEnrolled = !!enrollment;
-  const isStudent = authUser?.role === 'ESTUDANTE';
   const isProfessor = authUser?.role === 'PROFESSOR';
   const isOwner = course.instructor_id === user?.id;
 
@@ -244,7 +180,7 @@ export default function CourseDetailPage() {
                 </div>
                 <div className="flex items-center gap-1">
                   <Globe className="w-4 h-4" />
-                  {course.language === 'pt-BR' ? 'Português' : course.language}
+                  {course.language || 'Português'}
                 </div>
                 <div className="flex items-center gap-1">
                   <Play className="w-4 h-4" />
@@ -311,35 +247,28 @@ export default function CourseDetailPage() {
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <div className="border-t border-border">
-                            {getLessonsForSection(section.id).map((lesson) => {
-                              const isCompleted = lessonProgress?.some(
-                                (p) => p.lesson_id === lesson.id && p.completed
-                              );
-                              return (
-                                <div
-                                  key={lesson.id}
-                                  className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors border-b border-border last:border-b-0"
-                                >
-                                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                                    {isEnrolled && isCompleted ? (
-                                      <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                    ) : lesson.is_preview_free || isEnrolled ? (
-                                      <Play className="w-4 h-4 text-primary" />
-                                    ) : (
-                                      <Lock className="w-4 h-4 text-muted-foreground" />
-                                    )}
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="text-sm font-medium">{lesson.title}</p>
-                                  </div>
-                                  {lesson.is_preview_free && !isEnrolled && (
-                                    <Badge variant="outline" className="text-xs">
-                                      Prévia Grátis
-                                    </Badge>
+                            {getLessonsForSection(section.id).map((lesson) => (
+                              <div
+                                key={lesson.id}
+                                className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors border-b border-border last:border-b-0"
+                              >
+                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                                  {lesson.is_preview_free ? (
+                                    <Play className="w-4 h-4 text-primary" />
+                                  ) : (
+                                    <Lock className="w-4 h-4 text-muted-foreground" />
                                   )}
                                 </div>
-                              );
-                            })}
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">{lesson.title}</p>
+                                </div>
+                                {lesson.is_preview_free && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Prévia Grátis
+                                  </Badge>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         </CollapsibleContent>
                       </div>
@@ -352,11 +281,6 @@ export default function CourseDetailPage() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Course Rating */}
-            {isEnrolled && (
-              <CourseRating courseId={id!} isEnrolled={isEnrolled} />
-            )}
           </div>
 
           {/* Sidebar */}
@@ -375,50 +299,12 @@ export default function CourseDetailPage() {
                 )}
               </div>
               <CardContent className="p-6">
-                {isEnrolled ? (
-                  <>
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-muted-foreground">Seu progresso</span>
-                        <span className="text-sm font-medium">{progressPercentage}%</span>
-                      </div>
-                      <Progress value={progressPercentage} className="h-2" />
-                    </div>
-                    <Button
-                      className="w-full"
-                      size="lg"
-                      onClick={() => navigate(`/learn/${id}`)}
-                    >
-                      <Play className="w-4 h-4 mr-2" />
-                      Continuar Assistindo
+                {isProfessor && isOwner ? (
+                  <Link to={`/teacher/courses/${id}/edit`}>
+                    <Button className="w-full" variant="outline">
+                      Editar Curso
                     </Button>
-                  </>
-                ) : isStudent ? (
-                  <>
-                    <Button
-                      className="w-full mb-3"
-                      size="lg"
-                      onClick={() => enrollMutation.mutate()}
-                      disabled={enrollMutation.isPending}
-                    >
-                      {enrollMutation.isPending ? 'Matriculando...' : 'Matricular-se Grátis'}
-                    </Button>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Acesso imediato a todo o conteúdo do curso
-                    </p>
-                  </>
-                ) : isProfessor ? (
-                  isOwner ? (
-                    <Link to={`/teacher/courses/${id}/edit`}>
-                      <Button className="w-full" variant="outline">
-                        Editar Curso
-                      </Button>
-                    </Link>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center">
-                      Professores não podem se matricular em cursos
-                    </p>
-                  )
+                  </Link>
                 ) : (
                   <>
                     <Link to="/register">
@@ -435,31 +321,18 @@ export default function CourseDetailPage() {
             </Card>
 
             {/* Instructor */}
-            {instructor && (
+            {instructorName && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Instrutor</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                      {instructor.avatar_url ? (
-                        <img
-                          src={instructor.avatar_url}
-                          alt={instructor.display_name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User className="w-6 h-6 text-primary" />
-                      )}
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <p className="font-medium text-foreground">{instructor.display_name}</p>
-                      {instructor.bio && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {instructor.bio}
-                        </p>
-                      )}
+                      <p className="font-medium text-foreground">{instructorName}</p>
                     </div>
                   </div>
                 </CardContent>
