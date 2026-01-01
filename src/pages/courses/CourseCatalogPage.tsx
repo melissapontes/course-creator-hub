@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,7 +84,7 @@ export default function CourseCatalogPage() {
     },
   });
 
-  // Fetch instructor names separately
+  // Fetch instructor names from profiles table
   useEffect(() => {
     if (!courses || courses.length === 0) return;
 
@@ -92,14 +92,14 @@ export default function CourseCatalogPage() {
     
     const fetchInstructors = async () => {
       const { data } = await supabase
-        .from('professor_profiles')
-        .select('user_id, display_name')
-        .in('user_id', instructorIds);
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', instructorIds);
 
       if (data) {
         const names: Record<string, string> = {};
         data.forEach(p => {
-          names[p.user_id] = p.display_name;
+          names[p.id] = p.full_name;
         });
         setInstructorNames(names);
       }
@@ -212,7 +212,7 @@ export default function CourseCatalogPage() {
   };
 
   return (
-    <DashboardLayout>
+    <PublicLayout>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -429,6 +429,6 @@ export default function CourseCatalogPage() {
           </Card>
         )}
       </div>
-    </DashboardLayout>
+    </PublicLayout>
   );
 }

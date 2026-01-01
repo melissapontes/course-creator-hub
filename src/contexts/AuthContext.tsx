@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { AppRole, AuthUser, UserProfile, ProfessorProfile, StudentProfile } from '@/types/auth';
+import { AppRole, AuthUser, UserProfile } from '@/types/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -26,17 +26,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserData = useCallback(async (userId: string, userEmail: string) => {
     try {
-      // Fetch profile
+      // Fetch profile (id = user id from auth.users)
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', userId)
+        .eq('id', userId)
         .maybeSingle();
 
       if (profileError) throw profileError;
       if (!profile) return null;
 
-      // Fetch role
+      // Fetch role from user_roles table
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
@@ -44,36 +44,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (roleError) throw roleError;
-      if (!roleData) return null;
-
-      const role = roleData.role as AppRole;
-
-      let professorProfile: ProfessorProfile | undefined;
-      let studentProfile: StudentProfile | undefined;
-
-      if (role === 'PROFESSOR') {
-        const { data: profProfile } = await supabase
-          .from('professor_profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
-        professorProfile = profProfile || undefined;
-      } else if (role === 'ESTUDANTE') {
-        const { data: studProfile } = await supabase
-          .from('student_profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
-        studentProfile = studProfile || undefined;
-      }
+      
+      // Use role from user_roles table, fallback to profile.role
+      const role = (roleData?.role || profile.role) as AppRole;
 
       return {
         id: userId,
         email: userEmail,
         role,
         profile: profile as UserProfile,
-        professorProfile,
-        studentProfile,
       };
     } catch (error) {
       console.error('Error fetching user data:', error);

@@ -3,29 +3,11 @@ export type UserStatus = 'ATIVO' | 'BLOQUEADO';
 
 export interface UserProfile {
   id: string;
-  user_id: string;
   full_name: string;
   email: string;
+  avatar_url: string | null;
   status: UserStatus;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ProfessorProfile {
-  id: string;
-  user_id: string;
-  display_name: string;
-  bio: string | null;
-  avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface StudentProfile {
-  id: string;
-  user_id: string;
-  display_name: string | null;
-  avatar_url: string | null;
+  role: AppRole;
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +17,4 @@ export interface AuthUser {
   email: string;
   role: AppRole;
   profile: UserProfile;
-  professorProfile?: ProfessorProfile;
-  studentProfile?: StudentProfile;
 }
