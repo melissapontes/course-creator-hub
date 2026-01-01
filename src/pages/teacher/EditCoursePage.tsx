@@ -50,6 +50,7 @@ export default function EditCoursePage() {
     level: 'INICIANTE' as 'INICIANTE' | 'INTERMEDIARIO' | 'AVANCADO',
     language: 'pt-BR',
     thumbnail_url: '',
+    price: 0,
   });
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
 
@@ -78,6 +79,7 @@ export default function EditCoursePage() {
         level: (course.level as 'INICIANTE' | 'INTERMEDIARIO' | 'AVANCADO') || 'INICIANTE',
         language: course.language || 'pt-BR',
         thumbnail_url: course.thumbnail_url || '',
+        price: Number(course.price) || 0,
       });
     }
   }, [course]);
@@ -363,21 +365,39 @@ export default function EditCoursePage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="language">Idioma</Label>
-                    <Select
-                      value={formData.language}
-                      onValueChange={(value) => setFormData({ ...formData, language: value })}
-                    >
-                      <SelectTrigger className="w-full sm:w-48">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="es">Español</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="language">Idioma</Label>
+                      <Select
+                        value={formData.language}
+                        onValueChange={(value) => setFormData({ ...formData, language: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
+                          <SelectItem value="en">English</SelectItem>
+                          <SelectItem value="es">Español</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="price">Preço (R$)</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Deixe 0 para curso gratuito
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
