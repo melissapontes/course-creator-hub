@@ -16,9 +16,12 @@ import {
   ChevronDown,
   ChevronRight,
   User,
+  ShoppingCart,
+  Check,
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useState, useEffect } from 'react';
+import { useCart } from '@/hooks/useCart';
 
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -286,39 +289,12 @@ export default function CourseDetailPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Course Card */}
-            <Card className="sticky top-24">
-              <div className="h-48 bg-muted flex items-center justify-center">
-                {course.thumbnail_url ? (
-                  <img
-                    src={course.thumbnail_url}
-                    alt={course.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <BookOpen className="w-16 h-16 text-muted-foreground" />
-                )}
-              </div>
-              <CardContent className="p-6">
-                {isProfessor && isOwner ? (
-                  <Link to={`/teacher/courses/${id}/edit`}>
-                    <Button className="w-full" variant="outline">
-                      Editar Curso
-                    </Button>
-                  </Link>
-                ) : (
-                  <>
-                    <Link to="/register">
-                      <Button className="w-full mb-3" size="lg">
-                        Criar conta para acessar
-                      </Button>
-                    </Link>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Crie uma conta gratuita para acessar os cursos
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+            <CourseActionCard 
+              course={course} 
+              isProfessor={isProfessor} 
+              isOwner={isOwner} 
+              id={id!} 
+            />
 
             {/* Instructor */}
             {instructorName && (
@@ -342,5 +318,96 @@ export default function CourseDetailPage() {
         </div>
       </div>
     </PublicLayout>
+  );
+}
+
+// Separate component for course action card
+function CourseActionCard({ 
+  course, 
+  isProfessor, 
+  isOwner, 
+  id 
+}: { 
+  course: any; 
+  isProfessor: boolean; 
+  isOwner: boolean; 
+  id: string;
+}) {
+  const { authUser } = useAuth();
+  const { addToCart, isInCart } = useCart();
+  const inCart = isInCart(id);
+
+  const formatPrice = (price: number) => {
+    if (price === 0) return 'Grátis';
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(price);
+  };
+
+  const price = Number(course.price) || 0;
+
+  return (
+    <Card className="sticky top-24">
+      <div className="h-48 bg-muted flex items-center justify-center">
+        {course.thumbnail_url ? (
+          <img
+            src={course.thumbnail_url}
+            alt={course.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <BookOpen className="w-16 h-16 text-muted-foreground" />
+        )}
+      </div>
+      <CardContent className="p-6">
+        {/* Price */}
+        <div className="text-center mb-4">
+          <span className="text-3xl font-bold text-primary">
+            {formatPrice(price)}
+          </span>
+        </div>
+
+        {isProfessor && isOwner ? (
+          <Link to={`/teacher/courses/${id}/edit`}>
+            <Button className="w-full" variant="outline">
+              Editar Curso
+            </Button>
+          </Link>
+        ) : authUser ? (
+          <>
+            {inCart ? (
+              <Link to="/checkout">
+                <Button className="w-full mb-3" size="lg" variant="secondary">
+                  <Check className="mr-2 h-4 w-4" />
+                  Ver Carrinho
+                </Button>
+              </Link>
+            ) : (
+              <Button 
+                className="w-full mb-3" 
+                size="lg"
+                onClick={() => addToCart.mutate(id)}
+                disabled={addToCart.isPending}
+              >
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                {addToCart.isPending ? 'Adicionando...' : 'Adicionar ao Carrinho'}
+              </Button>
+            )}
+          </>
+        ) : (
+          <>
+            <Link to="/register">
+              <Button className="w-full mb-3" size="lg">
+                Criar conta para acessar
+              </Button>
+            </Link>
+            <p className="text-xs text-muted-foreground text-center">
+              Crie uma conta gratuita para acessar os cursos
+            </p>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }

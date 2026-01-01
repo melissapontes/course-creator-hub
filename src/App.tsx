@@ -32,6 +32,7 @@ import StudentDashboardPage from "./pages/student/StudentDashboardPage";
 import CourseCatalogPage from "./pages/courses/CourseCatalogPage";
 import CourseDetailPage from "./pages/courses/CourseDetailPage";
 import LearnCoursePage from "./pages/courses/LearnCoursePage";
+import CheckoutPage from "./pages/CheckoutPage";
 
 // Admin Placeholder
 const AdminPlaceholder = () => (
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/courses" element={<CourseCatalogPage />} />
               <Route path="/courses/:id" element={<CourseDetailPage />} />
+              <Route path="/checkout" element={<ProtectedRoute allowedRoles={['ESTUDANTE', 'PROFESSOR', 'ADMIN']}><CheckoutPage /></ProtectedRoute>} />
               
               {/* Auth routes */}
               <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />

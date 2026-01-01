@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { CartSheet } from '@/components/cart/CartSheet';
 
 export function Header() {
   const { authUser, signOut } = useAuth();
@@ -64,6 +65,7 @@ export function Header() {
             </Button>
           </Link>
 
+          <CartSheet />
           <ThemeToggle />
 
           {authUser ? (
