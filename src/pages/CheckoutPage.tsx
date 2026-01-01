@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
-import { PublicLayout } from '@/components/layout/PublicLayout';
+import { supabase } from '@/integrations/supabase/client';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ShoppingCart, Trash2, ArrowLeft, CreditCard, CheckCircle } from 'lucide-react';
+import { ShoppingCart, Trash2, ArrowLeft, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CheckoutPage() {
@@ -28,17 +29,44 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!authUser?.id) {
+      toast.error('Você precisa estar logado');
+      return;
+    }
+
     setIsProcessing(true);
     
-    // Simular processamento (futuramente integrar com gateway de pagamento)
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Por enquanto, apenas limpa o carrinho e mostra sucesso
-    await clearCart.mutateAsync();
-    
-    setIsProcessing(false);
-    toast.success('Compra realizada com sucesso!');
-    navigate('/student');
+    try {
+      // Simular processamento de pagamento
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Criar matrículas para cada curso no carrinho
+      const enrollments = cartItems.map(item => ({
+        user_id: authUser.id,
+        course_id: item.course_id,
+        status: 'ATIVO',
+      }));
+
+      const { error: enrollmentError } = await supabase
+        .from('enrollments')
+        .insert(enrollments);
+
+      if (enrollmentError) {
+        console.error('Error creating enrollments:', enrollmentError);
+        throw new Error('Erro ao processar matrícula');
+      }
+
+      // Limpar carrinho após matrículas criadas
+      await clearCart.mutateAsync();
+      
+      toast.success('Compra realizada com sucesso! Você já pode acessar seus cursos.');
+      navigate('/student');
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast.error('Erro ao processar compra. Tente novamente.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (!authUser) {
@@ -48,19 +76,19 @@ export default function CheckoutPage() {
 
   if (isLoading) {
     return (
-      <PublicLayout>
+      <DashboardLayout>
         <div className="container max-w-4xl py-12">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-muted rounded w-48"></div>
             <div className="h-64 bg-muted rounded"></div>
           </div>
         </div>
-      </PublicLayout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <PublicLayout>
+    <DashboardLayout>
       <div className="container max-w-4xl py-8 md:py-12">
         <Button 
           variant="ghost" 
@@ -191,6 +219,6 @@ export default function CheckoutPage() {
           </div>
         )}
       </div>
-    </PublicLayout>
+    </DashboardLayout>
   );
 }
