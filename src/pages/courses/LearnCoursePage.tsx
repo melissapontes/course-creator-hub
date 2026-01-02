@@ -49,19 +49,32 @@ export default function LearnCoursePage() {
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Verify enrollment
-  const { data: enrollment, isLoading: enrollmentLoading } = useQuery({
-    queryKey: ['enrollment', courseId, user?.id],
+  // Verify enrollment or course ownership (for professors)
+  const { data: accessData, isLoading: accessLoading } = useQuery({
+    queryKey: ['course-access', courseId, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Check enrollment first
+      const { data: enrollment, error: enrollmentError } = await supabase
         .from('enrollments')
-        .select('*')
+        .select('id')
         .eq('course_id', courseId)
         .eq('user_id', user!.id)
         .maybeSingle();
 
-      if (error) throw error;
-      return data;
+      if (enrollmentError) throw enrollmentError;
+      if (enrollment) return { hasAccess: true, isOwner: false };
+
+      // Check if user is the course owner (professor)
+      const { data: course, error: courseError } = await supabase
+        .from('courses')
+        .select('instructor_id')
+        .eq('id', courseId)
+        .maybeSingle();
+
+      if (courseError) throw courseError;
+      if (course?.instructor_id === user!.id) return { hasAccess: true, isOwner: true };
+
+      return { hasAccess: false, isOwner: false };
     },
     enabled: !!courseId && !!user?.id,
   });
@@ -79,7 +92,7 @@ export default function LearnCoursePage() {
       if (error) throw error;
       return data;
     },
-    enabled: !!courseId && !!enrollment,
+    enabled: !!courseId && !!accessData?.hasAccess,
   });
 
   // Fetch sections
@@ -95,7 +108,7 @@ export default function LearnCoursePage() {
       if (error) throw error;
       return data;
     },
-    enabled: !!courseId && !!enrollment,
+    enabled: !!courseId && !!accessData?.hasAccess,
   });
 
   // Fetch lessons
@@ -113,7 +126,7 @@ export default function LearnCoursePage() {
       if (error) throw error;
       return data as Lesson[];
     },
-    enabled: !!sections?.length && !!enrollment,
+    enabled: !!sections?.length && !!accessData?.hasAccess,
   });
 
   // Fetch progress
@@ -197,7 +210,7 @@ export default function LearnCoursePage() {
   const isQuizLesson = currentLesson?.content_type === 'QUIZ';
 
   // Loading state
-  if (enrollmentLoading) {
+  if (accessLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -208,8 +221,8 @@ export default function LearnCoursePage() {
     );
   }
 
-  // Not enrolled
-  if (!enrollment) {
+  // Not enrolled and not owner
+  if (!accessData?.hasAccess) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
         <Card className="max-w-md mx-4">

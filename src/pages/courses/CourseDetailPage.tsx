@@ -412,12 +412,12 @@ function CourseActionCard({
           </Link>
         ) : enrolled ? (
           <>
-            <Button 
-              className="w-full mb-3" 
-              size="lg"
-              variant="secondary"
-              onClick={() => navigate(`/courses/${id}/learn`)}
-            >
+              <Button 
+                className="w-full mb-3" 
+                size="lg"
+                variant="secondary"
+                onClick={() => navigate(`/learn/${id}`)}
+              >
               <Check className="mr-2 h-4 w-4" />
               Acessar Curso
             </Button>
