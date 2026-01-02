@@ -34,15 +34,8 @@ import CourseDetailPage from "./pages/courses/CourseDetailPage";
 import LearnCoursePage from "./pages/courses/LearnCoursePage";
 import CheckoutPage from "./pages/CheckoutPage";
 
-// Admin Placeholder
-const AdminPlaceholder = () => (
-  <div className="min-h-screen bg-background flex items-center justify-center">
-    <div className="text-center">
-      <h1 className="text-3xl font-display font-bold text-foreground">Painel Administrativo</h1>
-      <p className="text-muted-foreground mt-2">Em breve...</p>
-    </div>
-  </div>
-);
+// Admin Pages
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 
 const queryClient = new QueryClient();
 
@@ -85,7 +78,7 @@ const App = () => (
               <Route path="/student/courses" element={<ProtectedRoute allowedRoles={['ESTUDANTE']}><StudentDashboardPage /></ProtectedRoute>} />
 
               {/* Admin routes */}
-              <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminPlaceholder /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboardPage /></ProtectedRoute>} />
 
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
