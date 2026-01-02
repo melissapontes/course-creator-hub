@@ -1,11 +1,10 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  BookOpen,
   LayoutDashboard,
   BookMarked,
   PlusCircle,
@@ -15,7 +14,7 @@ import {
   Menu,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
+import logoImage from '@/assets/logo.png';
 
 interface NavItem {
   label: string;
@@ -76,10 +75,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </Button>
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-hero flex items-center justify-center">
-            <BookOpen className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="text-lg font-display font-bold">EduFlow</span>
+          <img src={logoImage} alt="Learning Bridge" className="w-8 h-8 object-contain" />
+          <span className="text-lg font-display font-bold">Learning Bridge</span>
         </Link>
         <div className="ml-auto">
           <ThemeToggle />
@@ -97,10 +94,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* Logo */}
           <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-                <BookOpen className="w-4 h-4 text-sidebar-primary-foreground" />
-              </div>
-              <span className="text-lg font-display font-bold">EduFlow</span>
+              <img src={logoImage} alt="Learning Bridge" className="w-8 h-8 object-contain" />
+              <span className="text-lg font-display font-bold">Learning Bridge</span>
             </Link>
           </div>
 
