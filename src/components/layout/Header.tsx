@@ -55,7 +55,7 @@ export function Header() {
           <div className="w-9 h-9 rounded-lg bg-gradient-hero flex items-center justify-center">
             <BookOpen className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-display font-bold text-foreground">EduFlow</span>
+          <span className="text-xl font-display font-bold text-foreground">LearnBridge</span>
         </Link>
 
         <div className="flex items-center gap-2">
