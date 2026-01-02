@@ -36,6 +36,8 @@ import CheckoutPage from "./pages/CheckoutPage";
 
 // Admin Pages
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import AdminProfessorsPage from "./pages/admin/AdminProfessorsPage";
+import AdminStudentsPage from "./pages/admin/AdminStudentsPage";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +81,8 @@ const App = () => (
 
               {/* Admin routes */}
               <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboardPage /></ProtectedRoute>} />
+              <Route path="/admin/professors" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminProfessorsPage /></ProtectedRoute>} />
+              <Route path="/admin/students" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminStudentsPage /></ProtectedRoute>} />
 
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />

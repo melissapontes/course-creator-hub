@@ -13,6 +13,8 @@ import {
   GraduationCap,
   Menu,
   X,
+  Users,
+  DollarSign,
 } from 'lucide-react';
 import logoImage from '@/assets/logo.png';
 
@@ -48,7 +50,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { label: 'Explorar Cursos', href: '/courses', icon: <GraduationCap className="w-5 h-5" /> },
   ];
 
-  const navItems = authUser?.role === 'PROFESSOR' ? teacherNavItems : studentNavItems;
+  const adminNavItems: NavItem[] = [
+    { label: 'Dashboard', href: '/admin', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { label: 'Professores', href: '/admin/professors', icon: <Users className="w-5 h-5" /> },
+    { label: 'Estudantes', href: '/admin/students', icon: <GraduationCap className="w-5 h-5" /> },
+    { label: 'Finanças', href: '/admin', icon: <DollarSign className="w-5 h-5" /> },
+  ];
+
+  const navItems = authUser?.role === 'ADMIN' 
+    ? adminNavItems 
+    : authUser?.role === 'PROFESSOR' 
+      ? teacherNavItems 
+      : studentNavItems;
 
   const getInitials = () => {
     if (authUser?.profile?.full_name) {
