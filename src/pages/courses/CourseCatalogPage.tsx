@@ -15,9 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { BookOpen, Search, Filter, GraduationCap, Calendar, X, ArrowUpDown } from 'lucide-react';
+import { BookOpen, Search, Filter, GraduationCap, Calendar, X, ArrowUpDown, Star, Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { useCart } from '@/hooks/useCart';
 
 const CATEGORIES = [
   'Tecnologia',
@@ -61,17 +62,26 @@ type CourseWithInstructor = {
   created_at: string;
   updated_at: string;
   instructor_id: string;
+  price: number | null;
   instructor_name?: string;
+};
+
+type CourseRating = {
+  course_id: string;
+  average: number;
+  count: number;
 };
 
 export default function CourseCatalogPage() {
   const { authUser } = useAuth();
+  const { isEnrolled } = useCart();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [level, setLevel] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
   const [instructorNames, setInstructorNames] = useState<Record<string, string>>({});
+  const [courseRatings, setCourseRatings] = useState<Record<string, CourseRating>>({});
 
   // Use DashboardLayout if user is logged in, otherwise PublicLayout
   const Layout = authUser ? DashboardLayout : PublicLayout;
@@ -113,6 +123,48 @@ export default function CourseCatalogPage() {
 
     fetchInstructors();
   }, [courses]);
+
+  // Fetch course ratings
+  useEffect(() => {
+    if (!courses || courses.length === 0) return;
+
+    const fetchRatings = async () => {
+      const courseIds = courses.map(c => c.id);
+      const { data } = await supabase
+        .from('course_ratings')
+        .select('course_id, rating')
+        .in('course_id', courseIds);
+
+      if (data) {
+        const ratingsMap: Record<string, CourseRating> = {};
+        
+        // Group ratings by course_id
+        const grouped: Record<string, number[]> = {};
+        data.forEach(r => {
+          if (!grouped[r.course_id]) grouped[r.course_id] = [];
+          grouped[r.course_id].push(r.rating);
+        });
+
+        // Calculate averages
+        Object.entries(grouped).forEach(([courseId, ratings]) => {
+          const average = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+          ratingsMap[courseId] = { course_id: courseId, average, count: ratings.length };
+        });
+
+        setCourseRatings(ratingsMap);
+      }
+    };
+
+    fetchRatings();
+  }, [courses]);
+
+  const formatPrice = (price: number | null) => {
+    if (price === null || price === 0) return 'Grátis';
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(price);
+  };
 
   const filteredAndSortedCourses = useMemo(() => {
     if (!courses) return [];
@@ -402,16 +454,30 @@ export default function CourseCatalogPage() {
                     )}
 
                     <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
-                      <div className="flex flex-col gap-1">
-                        {course.category && (
-                          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                            {course.category}
-                          </span>
+                      <div className="flex items-center gap-2">
+                        {courseRatings[course.id] ? (
+                          <div className="flex items-center gap-1">
+                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                            <span className="text-sm font-medium">{courseRatings[course.id].average.toFixed(1)}</span>
+                            <span className="text-xs text-muted-foreground">({courseRatings[course.id].count})</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <Star className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">Sem avaliações</span>
+                          </div>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(course.created_at)}
-                      </span>
+                      {isEnrolled(course.id) ? (
+                        <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                          <Check className="h-3 w-3 mr-1" />
+                          Possuído
+                        </Badge>
+                      ) : (
+                        <span className="text-sm font-bold text-primary">
+                          {formatPrice(course.price)}
+                        </span>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
