@@ -54,7 +54,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { label: 'Dashboard', href: '/admin', icon: <LayoutDashboard className="w-5 h-5" /> },
     { label: 'Professores', href: '/admin/professors', icon: <Users className="w-5 h-5" /> },
     { label: 'Estudantes', href: '/admin/students', icon: <GraduationCap className="w-5 h-5" /> },
-    { label: 'Finanças', href: '/admin', icon: <DollarSign className="w-5 h-5" /> },
   ];
 
   const navItems = authUser?.role === 'ADMIN' 
