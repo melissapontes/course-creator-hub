@@ -2,39 +2,20 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DollarSign, Users, TrendingUp, CreditCard, GraduationCap, BookOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface ProfessorRevenue {
-  instructorId: string;
-  instructorName: string;
-  instructorEmail: string;
-  totalSales: number;
-  professorShare: number;
-  platformShare: number;
-  gatewayShare: number;
-  coursesCount: number;
-  enrollmentsCount: number;
-}
-
 export default function AdminDashboardPage() {
-  // Fetch all enrollments with course and instructor data
   const { data: financialData, isLoading } = useQuery({
     queryKey: ['admin-financial-data'],
     queryFn: async () => {
-      // Get all enrollments with course info
       const { data: enrollments, error: enrollmentsError } = await supabase
         .from('enrollments')
         .select(`
           id,
           course_id,
-          user_id,
-          enrolled_at,
           courses (
             id,
-            title,
             price,
             instructor_id
           )
@@ -42,55 +23,25 @@ export default function AdminDashboardPage() {
 
       if (enrollmentsError) throw enrollmentsError;
 
-      // Get all profiles for instructor names
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email');
-
-      if (profilesError) throw profilesError;
-
-      // Get course counts per instructor
       const { data: courses, error: coursesError } = await supabase
         .from('courses')
         .select('id, instructor_id');
 
       if (coursesError) throw coursesError;
 
-      // Calculate totals
-      let totalRevenue = 0;
-      const professorMap = new Map<string, ProfessorRevenue>();
+      const { data: professors, error: profError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'PROFESSOR');
 
+      if (profError) throw profError;
+
+      let totalRevenue = 0;
       enrollments?.forEach((enrollment: any) => {
         const course = enrollment.courses;
-        if (!course) return;
-
-        const price = Number(course.price) || 0;
-        totalRevenue += price;
-
-        const instructorId = course.instructor_id;
-        const profile = profiles?.find(p => p.id === instructorId);
-
-        if (!professorMap.has(instructorId)) {
-          const instructorCourses = courses?.filter(c => c.instructor_id === instructorId) || [];
-          professorMap.set(instructorId, {
-            instructorId,
-            instructorName: profile?.full_name || 'Professor Desconhecido',
-            instructorEmail: profile?.email || '',
-            totalSales: 0,
-            professorShare: 0,
-            platformShare: 0,
-            gatewayShare: 0,
-            coursesCount: instructorCourses.length,
-            enrollmentsCount: 0
-          });
+        if (course) {
+          totalRevenue += Number(course.price) || 0;
         }
-
-        const prof = professorMap.get(instructorId)!;
-        prof.totalSales += price;
-        prof.professorShare += price * 0.85;
-        prof.platformShare += price * 0.10;
-        prof.gatewayShare += price * 0.05;
-        prof.enrollmentsCount += 1;
       });
 
       const totalProfessorShare = totalRevenue * 0.85;
@@ -103,9 +54,8 @@ export default function AdminDashboardPage() {
         totalPlatformShare,
         totalGatewayShare,
         totalEnrollments: enrollments?.length || 0,
-        totalProfessors: professorMap.size,
-        totalCourses: courses?.length || 0,
-        professors: Array.from(professorMap.values()).sort((a, b) => b.totalSales - a.totalSales)
+        totalProfessors: professors?.length || 0,
+        totalCourses: courses?.length || 0
       };
     }
   });
@@ -119,7 +69,7 @@ export default function AdminDashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 p-6">
         <div>
           <h1 className="text-3xl font-display font-bold text-foreground">
             Painel Administrativo
@@ -259,123 +209,57 @@ export default function AdminDashboardPage() {
           </Card>
         </div>
 
-        {/* Tabs for detailed views */}
-        <Tabs defaultValue="professors" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="professors">Professores</TabsTrigger>
-            <TabsTrigger value="breakdown">Divisão Financeira</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="professors" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Faturamento por Professor</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="space-y-2">
-                    {[1, 2, 3].map(i => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : financialData?.professors && financialData.professors.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Professor</TableHead>
-                        <TableHead className="text-center">Cursos</TableHead>
-                        <TableHead className="text-center">Vendas</TableHead>
-                        <TableHead className="text-right">Total Vendido</TableHead>
-                        <TableHead className="text-right">Receita Prof. (85%)</TableHead>
-                        <TableHead className="text-right">Receita Plataforma (10%)</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {financialData.professors.map((prof) => (
-                        <TableRow key={prof.instructorId}>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{prof.instructorName}</p>
-                              <p className="text-sm text-muted-foreground">{prof.instructorEmail}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">{prof.coursesCount}</TableCell>
-                          <TableCell className="text-center">{prof.enrollmentsCount}</TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(prof.totalSales)}
-                          </TableCell>
-                          <TableCell className="text-right text-green-600">
-                            {formatCurrency(prof.professorShare)}
-                          </TableCell>
-                          <TableCell className="text-right text-primary">
-                            {formatCurrency(prof.platformShare)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    Nenhuma venda registrada ainda.
+        {/* Revenue Breakdown */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Divisão de Receita</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <p className="text-sm text-muted-foreground">Professores (85%)</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {isLoading ? <Skeleton className="h-8 w-24" /> : formatCurrency(financialData?.totalProfessorShare || 0)}
                   </p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="breakdown" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Divisão de Receita</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-                      <p className="text-sm text-muted-foreground">Professores (85%)</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        {isLoading ? <Skeleton className="h-8 w-24" /> : formatCurrency(financialData?.totalProfessorShare || 0)}
-                      </p>
-                    </div>
-                    <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-                      <p className="text-sm text-muted-foreground">Plataforma (10%)</p>
-                      <p className="text-2xl font-bold text-primary">
-                        {isLoading ? <Skeleton className="h-8 w-24" /> : formatCurrency(financialData?.totalPlatformShare || 0)}
-                      </p>
-                    </div>
-                    <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                      <p className="text-sm text-muted-foreground">Gateway (5%)</p>
-                      <p className="text-2xl font-bold text-orange-600">
-                        {isLoading ? <Skeleton className="h-8 w-24" /> : formatCurrency(financialData?.totalGatewayShare || 0)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="h-4 rounded-full overflow-hidden bg-muted flex">
-                    <div className="bg-green-500 h-full" style={{ width: '85%' }} />
-                    <div className="bg-primary h-full" style={{ width: '10%' }} />
-                    <div className="bg-orange-500 h-full" style={{ width: '5%' }} />
-                  </div>
-
-                  <div className="flex justify-center gap-6 text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500" />
-                      <span>Professores (85%)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-primary" />
-                      <span>Plataforma (10%)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-orange-500" />
-                      <span>Gateway (5%)</span>
-                    </div>
-                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                  <p className="text-sm text-muted-foreground">Plataforma (10%)</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {isLoading ? <Skeleton className="h-8 w-24" /> : formatCurrency(financialData?.totalPlatformShare || 0)}
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                  <p className="text-sm text-muted-foreground">Gateway (5%)</p>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {isLoading ? <Skeleton className="h-8 w-24" /> : formatCurrency(financialData?.totalGatewayShare || 0)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="h-4 rounded-full overflow-hidden bg-muted flex">
+                <div className="bg-green-500 h-full" style={{ width: '85%' }} />
+                <div className="bg-primary h-full" style={{ width: '10%' }} />
+                <div className="bg-orange-500 h-full" style={{ width: '5%' }} />
+              </div>
+
+              <div className="flex justify-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
+                  <span>Professores (85%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-primary" />
+                  <span>Plataforma (10%)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-orange-500" />
+                  <span>Gateway (5%)</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
