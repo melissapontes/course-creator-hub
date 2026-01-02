@@ -36,14 +36,31 @@ export default function TeacherCoursesPage() {
   const { data: courses, isLoading } = useQuery({
     queryKey: ['teacher-courses', authUser?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: coursesData, error: coursesError } = await supabase
         .from('courses')
         .select('*')
         .eq('instructor_id', authUser!.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data;
+      if (coursesError) throw coursesError;
+
+      // Fetch enrollments count for each course
+      const { data: enrollments, error: enrollmentsError } = await supabase
+        .from('enrollments')
+        .select('course_id');
+
+      if (enrollmentsError) throw enrollmentsError;
+
+      // Count enrollments per course
+      const enrollmentCounts = (enrollments || []).reduce((acc, e) => {
+        acc[e.course_id] = (acc[e.course_id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      return (coursesData || []).map(course => ({
+        ...course,
+        salesCount: enrollmentCounts[course.id] || 0,
+      }));
     },
     enabled: !!authUser?.id,
   });
@@ -198,15 +215,25 @@ export default function TeacherCoursesPage() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                  <div className="flex items-center gap-2 mt-3">
-                    <Badge variant="secondary" className="text-xs">
-                      {getLevelLabel(course.level)}
-                    </Badge>
-                    {course.category && (
-                      <Badge variant="outline" className="text-xs">
-                        {course.category}
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {getLevelLabel(course.level)}
                       </Badge>
-                    )}
+                      {course.category && (
+                        <Badge variant="outline" className="text-xs">
+                          {course.category}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+                    <span className="text-sm font-semibold text-primary">
+                      R$ {Number(course.price || 0).toFixed(2).replace('.', ',')}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {course.salesCount} {course.salesCount === 1 ? 'venda' : 'vendas'}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
