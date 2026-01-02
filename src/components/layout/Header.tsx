@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
-import { BookOpen, LogOut, User, LayoutDashboard } from 'lucide-react';
+import { LogOut, User, LayoutDashboard } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { CartSheet } from '@/components/cart/CartSheet';
+import logoImage from '@/assets/logo.png';
 
 export function Header() {
   const { authUser, signOut } = useAuth();
@@ -52,10 +53,8 @@ export function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-gradient-hero flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-display font-bold text-foreground">LearnBridge</span>
+          <img src={logoImage} alt="Learning Bridge" className="w-9 h-9 object-contain" />
+          <span className="text-xl font-display font-bold text-foreground">Learning Bridge</span>
         </Link>
 
         <div className="flex items-center gap-2">

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, BookOpen, Eye, EyeOff, ChevronRight } from 'lucide-react';
+import { PlusCircle, BookOpen, Eye, EyeOff, ChevronRight, DollarSign, TrendingUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function TeacherDashboardPage() {
@@ -26,8 +26,58 @@ export default function TeacherDashboardPage() {
     enabled: !!user?.id,
   });
 
+  // Fetch enrollments to calculate sales
+  const { data: salesData, isLoading: salesLoading } = useQuery({
+    queryKey: ['teacher-sales', user?.id],
+    queryFn: async () => {
+      // Get all courses for this instructor
+      const { data: instructorCourses, error: coursesError } = await supabase
+        .from('courses')
+        .select('id, price')
+        .eq('instructor_id', user!.id);
+
+      if (coursesError) throw coursesError;
+      if (!instructorCourses || instructorCourses.length === 0) {
+        return { totalSales: 0, netRevenue: 0, enrollmentsCount: 0 };
+      }
+
+      const courseIds = instructorCourses.map((c) => c.id);
+      const courseMap = new Map(instructorCourses.map((c) => [c.id, Number(c.price) || 0]));
+
+      // Get all enrollments for these courses
+      const { data: enrollments, error: enrollmentsError } = await supabase
+        .from('enrollments')
+        .select('course_id')
+        .in('course_id', courseIds);
+
+      if (enrollmentsError) throw enrollmentsError;
+
+      // Calculate total sales
+      const totalSales = enrollments?.reduce((sum, enrollment) => {
+        return sum + (courseMap.get(enrollment.course_id) || 0);
+      }, 0) || 0;
+
+      // Net revenue after 15% platform fee
+      const netRevenue = totalSales * 0.85;
+
+      return {
+        totalSales,
+        netRevenue,
+        enrollmentsCount: enrollments?.length || 0,
+      };
+    },
+    enabled: !!user?.id,
+  });
+
   const publishedCount = courses?.filter((c) => c.status === 'PUBLICADO').length || 0;
   const draftCount = courses?.filter((c) => c.status === 'RASCUNHO').length || 0;
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
 
   return (
     <DashboardLayout>
@@ -42,7 +92,43 @@ export default function TeacherDashboardPage() {
           </p>
         </div>
 
-        {/* Stats */}
+        {/* Sales Stats */}
+        <div className="grid gap-4 md:grid-cols-2 mb-8">
+          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total Vendido
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-foreground">
+                {salesLoading ? <Skeleton className="h-8 w-24" /> : formatCurrency(salesData?.totalSales || 0)}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {salesLoading ? <Skeleton className="h-3 w-20" /> : `${salesData?.enrollmentsCount || 0} matrículas`}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Receita Líquida
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                {salesLoading ? <Skeleton className="h-8 w-24" /> : formatCurrency(salesData?.netRevenue || 0)}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Após taxa de 15% da plataforma
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Course Stats */}
         <div className="grid gap-4 md:grid-cols-3 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
