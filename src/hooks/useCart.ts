@@ -22,6 +22,23 @@ export function useCart() {
   const { authUser } = useAuth();
   const queryClient = useQueryClient();
 
+  // Fetch user enrollments to check if already purchased
+  const { data: enrolledCourseIds = [] } = useQuery({
+    queryKey: ['user-enrollments', authUser?.id],
+    queryFn: async () => {
+      if (!authUser) return [];
+      
+      const { data, error } = await supabase
+        .from('enrollments')
+        .select('course_id')
+        .eq('user_id', authUser.id);
+
+      if (error) throw error;
+      return data.map(e => e.course_id);
+    },
+    enabled: !!authUser,
+  });
+
   // Fetch cart items with course details
   const { data: cartItems = [], isLoading, refetch } = useQuery({
     queryKey: ['cart', authUser?.id],
@@ -56,10 +73,20 @@ export function useCart() {
     enabled: !!authUser,
   });
 
+  // Check if course is already enrolled
+  const isEnrolled = useCallback((courseId: string) => {
+    return enrolledCourseIds.includes(courseId);
+  }, [enrolledCourseIds]);
+
   // Add to cart mutation
   const addToCart = useMutation({
     mutationFn: async (courseId: string) => {
       if (!authUser) throw new Error('Usuário não autenticado');
+
+      // Check if already enrolled
+      if (enrolledCourseIds.includes(courseId)) {
+        throw new Error('Você já possui este curso');
+      }
 
       const { error } = await supabase
         .from('cart_items')
@@ -138,6 +165,7 @@ export function useCart() {
     removeFromCart,
     clearCart,
     isInCart,
+    isEnrolled,
     refetch,
   };
 }
