@@ -10,6 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { VideoPlayer } from '@/components/lesson/VideoPlayer';
 import { LessonSidebar } from '@/components/lesson/LessonSidebar';
 import { LessonCommentsSection } from '@/components/lesson/LessonCommentsSection';
+import { LessonTextContent } from '@/components/lesson/LessonTextContent';
+import { LessonQuiz } from '@/components/lesson/LessonQuiz';
 import {
   BookOpen,
   CheckCircle,
@@ -20,9 +22,24 @@ import {
   FileText,
   MessageCircle,
   Info,
+  HelpCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+interface Lesson {
+  id: string;
+  section_id: string;
+  title: string;
+  order: number;
+  content_type: string;
+  video_file_url: string | null;
+  youtube_url: string | null;
+  text_content: string | null;
+  duration_seconds: number | null;
+  is_preview_free: boolean;
+}
 
 export default function LearnCoursePage() {
   const { id: courseId } = useParams<{ id: string }>();
@@ -94,7 +111,7 @@ export default function LearnCoursePage() {
         .order('order');
 
       if (error) throw error;
-      return data;
+      return data as Lesson[];
     },
     enabled: !!sections?.length && !!enrollment,
   });
@@ -174,6 +191,11 @@ export default function LearnCoursePage() {
 
   const isCurrentCompleted = progress?.some(p => p.lesson_id === currentLessonId && p.completed);
 
+  // Determine content type
+  const isVideoLesson = currentLesson?.content_type === 'YOUTUBE_LINK' || currentLesson?.content_type === 'VIDEO_UPLOAD';
+  const isTextLesson = currentLesson?.content_type === 'TEXTO';
+  const isQuizLesson = currentLesson?.content_type === 'QUIZ';
+
   // Loading state
   if (enrollmentLoading) {
     return (
@@ -243,76 +265,95 @@ export default function LearnCoursePage() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Video & Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Video Player */}
-          <div className="bg-black">
-            {currentLesson ? (
-              <div className="max-w-5xl mx-auto">
-                <VideoPlayer
-                  youtubeUrl={currentLesson.youtube_url}
-                  videoFileUrl={currentLesson.video_file_url}
-                  title={currentLesson.title}
-                  onComplete={() => {
-                    if (!isCurrentCompleted) {
-                      toggleCompletion.mutate(currentLessonId!);
-                    }
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="aspect-video flex items-center justify-center max-w-5xl mx-auto">
-                <Skeleton className="w-full h-full" />
+        {/* Content Area - Scrollable */}
+        <ScrollArea className="flex-1">
+          <div className="min-h-full">
+            {/* Video Player or Content */}
+            {isVideoLesson && (
+              <div className="bg-black">
+                {currentLesson ? (
+                  <div className="max-w-5xl mx-auto">
+                    <VideoPlayer
+                      youtubeUrl={currentLesson.youtube_url}
+                      videoFileUrl={currentLesson.video_file_url}
+                      title={currentLesson.title}
+                      onComplete={() => {
+                        if (!isCurrentCompleted) {
+                          toggleCompletion.mutate(currentLessonId!);
+                        }
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-video flex items-center justify-center max-w-5xl mx-auto">
+                    <Skeleton className="w-full h-full" />
+                  </div>
+                )}
               </div>
             )}
-          </div>
 
-          {/* Lesson Info & Controls */}
-          <div className="border-b border-border bg-card">
-            <div className="max-w-5xl mx-auto p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground">
-                    {currentLesson?.title || 'Carregando...'}
-                  </h2>
+            {isTextLesson && currentLesson && (
+              <div className="max-w-5xl mx-auto p-4 md:p-6">
+                <LessonTextContent 
+                  content={currentLesson.text_content || ''} 
+                  title={currentLesson.title} 
+                />
+              </div>
+            )}
+
+            {isQuizLesson && currentLesson && (
+              <div className="max-w-3xl mx-auto p-4 md:p-6">
+                <LessonQuiz lessonId={currentLesson.id} />
+              </div>
+            )}
+
+            {/* Lesson Info & Controls */}
+            <div className="border-b border-border bg-card">
+              <div className="max-w-5xl mx-auto p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    {isTextLesson && <FileText className="h-5 w-5 text-primary" />}
+                    {isQuizLesson && <HelpCircle className="h-5 w-5 text-primary" />}
+                    <h2 className="text-xl font-semibold text-foreground">
+                      {currentLesson?.title || 'Carregando...'}
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={isCurrentCompleted ? 'secondary' : 'default'}
+                      onClick={() => currentLessonId && toggleCompletion.mutate(currentLessonId)}
+                      disabled={toggleCompletion.isPending}
+                    >
+                      <CheckCircle
+                        className={cn('w-4 h-4 mr-2', isCurrentCompleted && 'text-green-500')}
+                      />
+                      {isCurrentCompleted ? 'Concluída' : 'Marcar como Concluída'}
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
+
+                {/* Navigation Buttons */}
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
                   <Button
-                    variant={isCurrentCompleted ? 'secondary' : 'default'}
-                    onClick={() => currentLessonId && toggleCompletion.mutate(currentLessonId)}
-                    disabled={toggleCompletion.isPending}
+                    variant="outline"
+                    onClick={() => prevLesson && setCurrentLessonId(prevLesson.id)}
+                    disabled={!prevLesson}
                   >
-                    <CheckCircle
-                      className={cn('w-4 h-4 mr-2', isCurrentCompleted && 'text-green-500')}
-                    />
-                    {isCurrentCompleted ? 'Concluída' : 'Marcar como Concluída'}
+                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    Anterior
+                  </Button>
+                  <Button
+                    onClick={() => nextLesson && setCurrentLessonId(nextLesson.id)}
+                    disabled={!nextLesson}
+                  >
+                    Próxima
+                    <ChevronRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
               </div>
-
-              {/* Navigation Buttons */}
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-                <Button
-                  variant="outline"
-                  onClick={() => prevLesson && setCurrentLessonId(prevLesson.id)}
-                  disabled={!prevLesson}
-                >
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  Anterior
-                </Button>
-                <Button
-                  onClick={() => nextLesson && setCurrentLessonId(nextLesson.id)}
-                  disabled={!nextLesson}
-                >
-                  Próxima
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
             </div>
-          </div>
 
-          {/* Tabs Content */}
-          <div className="flex-1 overflow-auto">
+            {/* Tabs Content */}
             <div className="max-w-5xl mx-auto p-4">
               <Tabs defaultValue="comments" className="w-full">
                 <TabsList className="mb-4">
@@ -343,7 +384,7 @@ export default function LearnCoursePage() {
               </Tabs>
             </div>
           </div>
-        </div>
+        </ScrollArea>
 
         {/* Sidebar */}
         <div

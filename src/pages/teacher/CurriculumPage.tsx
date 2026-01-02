@@ -64,6 +64,7 @@ interface Lesson {
   content_type: string;
   video_file_url: string | null;
   youtube_url: string | null;
+  text_content: string | null;
   duration_seconds: number | null;
   is_preview_free: boolean;
 }
@@ -85,6 +86,7 @@ export default function CurriculumPage() {
     title: '',
     content_type: 'YOUTUBE_LINK' as string,
     youtube_url: '',
+    text_content: '',
     is_preview_free: false,
   });
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -213,6 +215,7 @@ export default function CurriculumPage() {
         content_type: lessonData.content_type,
         youtube_url: lessonData.content_type === 'YOUTUBE_LINK' ? lessonData.youtube_url : null,
         video_file_url: lessonData.content_type === 'VIDEO_UPLOAD' ? video_file_url : null,
+        text_content: lessonData.content_type === 'TEXTO' ? lessonData.text_content : null,
         is_preview_free: lessonData.is_preview_free,
       };
 
@@ -269,6 +272,7 @@ export default function CurriculumPage() {
       title: lesson?.title || '',
       content_type: lesson?.content_type || 'YOUTUBE_LINK',
       youtube_url: lesson?.youtube_url || '',
+      text_content: lesson?.text_content || '',
       is_preview_free: lesson?.is_preview_free || false,
     });
     setVideoFile(null);
@@ -277,7 +281,7 @@ export default function CurriculumPage() {
 
   const closeLessonDialog = () => {
     setLessonDialog({ open: false });
-    setLessonData({ title: '', content_type: 'YOUTUBE_LINK', youtube_url: '', is_preview_free: false });
+    setLessonData({ title: '', content_type: 'YOUTUBE_LINK', youtube_url: '', text_content: '', is_preview_free: false });
     setVideoFile(null);
   };
 
@@ -612,6 +616,19 @@ export default function CurriculumPage() {
                     Vídeo atual já carregado. Selecione um novo para substituir.
                   </p>
                 )}
+              </div>
+            )}
+
+            {lessonData.content_type === 'TEXTO' && (
+              <div className="space-y-2">
+                <Label htmlFor="text-content">Conteúdo da Aula</Label>
+                <Textarea
+                  id="text-content"
+                  placeholder="Digite o conteúdo da aula..."
+                  value={lessonData.text_content}
+                  onChange={(e) => setLessonData({ ...lessonData, text_content: e.target.value })}
+                  rows={8}
+                />
               </div>
             )}
 

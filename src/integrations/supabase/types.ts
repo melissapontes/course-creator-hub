@@ -223,6 +223,7 @@ export type Database = {
           is_preview_free: boolean
           order: number
           section_id: string
+          text_content: string | null
           title: string
           updated_at: string
           video_file_url: string | null
@@ -236,6 +237,7 @@ export type Database = {
           is_preview_free?: boolean
           order?: number
           section_id: string
+          text_content?: string | null
           title: string
           updated_at?: string
           video_file_url?: string | null
@@ -249,6 +251,7 @@ export type Database = {
           is_preview_free?: boolean
           order?: number
           section_id?: string
+          text_content?: string | null
           title?: string
           updated_at?: string
           video_file_url?: string | null
@@ -296,6 +299,108 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      quiz_attempts: {
+        Row: {
+          completed_at: string
+          id: string
+          lesson_id: string
+          passed: boolean
+          score: number
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          lesson_id: string
+          passed?: boolean
+          score?: number
+          total_questions?: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          lesson_id?: string
+          passed?: boolean
+          score?: number
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_options: {
+        Row: {
+          id: string
+          is_correct: boolean
+          option_order: number
+          option_text: string
+          question_id: string
+        }
+        Insert: {
+          id?: string
+          is_correct?: boolean
+          option_order?: number
+          option_text: string
+          question_id: string
+        }
+        Update: {
+          id?: string
+          is_correct?: boolean
+          option_order?: number
+          option_text?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          created_at: string
+          id: string
+          lesson_id: string
+          question: string
+          question_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lesson_id: string
+          question: string
+          question_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          question?: string
+          question_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sections: {
         Row: {
