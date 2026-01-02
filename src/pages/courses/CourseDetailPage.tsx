@@ -18,17 +18,22 @@ import {
   User,
   ShoppingCart,
   Check,
+  Star,
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useState, useEffect } from 'react';
 import { useCart } from '@/hooks/useCart';
+import { CourseRating } from '@/components/lesson/CourseRating';
 
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { authUser, user } = useAuth();
+  const { isEnrolled } = useCart();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [instructorName, setInstructorName] = useState<string>('');
+  
+  const courseEnrolled = isEnrolled(id || '');
 
   const { data: course, isLoading: courseLoading } = useQuery({
     queryKey: ['public-course', id],
@@ -60,6 +65,25 @@ export default function CourseDetailPage() {
         });
     }
   }, [course?.instructor_id]);
+
+  // Fetch course average rating
+  const { data: ratingData } = useQuery({
+    queryKey: ['course-rating-avg', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('course_ratings')
+        .select('rating')
+        .eq('course_id', id);
+
+      if (error) throw error;
+      
+      if (!data || data.length === 0) return { average: 0, count: 0 };
+      
+      const average = data.reduce((sum, r) => sum + r.rating, 0) / data.length;
+      return { average, count: data.length };
+    },
+    enabled: !!id,
+  });
 
   const { data: sections } = useQuery({
     queryKey: ['public-sections', id],
@@ -189,6 +213,13 @@ export default function CourseDetailPage() {
                   <Play className="w-4 h-4" />
                   {totalLessons} aulas
                 </div>
+                {ratingData && ratingData.count > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                    <span className="font-semibold">{ratingData.average.toFixed(1)}</span>
+                    <span>({ratingData.count} avaliações)</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -284,6 +315,9 @@ export default function CourseDetailPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Course Rating Section */}
+            <CourseRating courseId={id!} isEnrolled={courseEnrolled} />
           </div>
 
           {/* Sidebar */}
@@ -333,9 +367,11 @@ function CourseActionCard({
   isOwner: boolean; 
   id: string;
 }) {
+  const navigate = useNavigate();
   const { authUser } = useAuth();
-  const { addToCart, isInCart } = useCart();
+  const { addToCart, isInCart, isEnrolled } = useCart();
   const inCart = isInCart(id);
+  const enrolled = isEnrolled(id);
 
   const formatPrice = (price: number) => {
     if (price === 0) return 'Grátis';
@@ -374,6 +410,21 @@ function CourseActionCard({
               Editar Curso
             </Button>
           </Link>
+        ) : enrolled ? (
+          <>
+            <Button 
+              className="w-full mb-3" 
+              size="lg"
+              variant="secondary"
+              onClick={() => navigate(`/courses/${id}/learn`)}
+            >
+              <Check className="mr-2 h-4 w-4" />
+              Acessar Curso
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              Você já possui este curso
+            </p>
+          </>
         ) : authUser ? (
           <>
             {inCart ? (
