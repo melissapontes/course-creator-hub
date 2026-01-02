@@ -14,7 +14,6 @@ import {
   Menu,
   X,
   Users,
-  DollarSign,
 } from 'lucide-react';
 import logoImage from '@/assets/logo.png';
 

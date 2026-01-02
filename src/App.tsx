@@ -39,7 +39,16 @@ import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminProfessorsPage from "./pages/admin/AdminProfessorsPage";
 import AdminStudentsPage from "./pages/admin/AdminStudentsPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -54,16 +63,16 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/courses" element={<CourseCatalogPage />} />
               <Route path="/courses/:id" element={<CourseDetailPage />} />
-              <Route path="/checkout" element={<ProtectedRoute allowedRoles={['ESTUDANTE', 'PROFESSOR', 'ADMIN']}><CheckoutPage /></ProtectedRoute>} />
+              <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
               
               {/* Auth routes */}
               <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
               <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* Profile (any authenticated user) */}
-              <Route path="/profile" element={<ProtectedRoute allowedRoles={['PROFESSOR', 'ESTUDANTE', 'ADMIN']}><ProfilePage /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
               {/* Teacher routes */}
               <Route path="/teacher" element={<ProtectedRoute allowedRoles={['PROFESSOR']}><TeacherDashboardPage /></ProtectedRoute>} />
@@ -75,9 +84,7 @@ const App = () => (
 
               {/* Student routes */}
               <Route path="/student" element={<ProtectedRoute allowedRoles={['ESTUDANTE']}><StudentDashboardPage /></ProtectedRoute>} />
-              <Route path="/student/courses" element={<ProtectedRoute allowedRoles={['ESTUDANTE']}><StudentDashboardPage /></ProtectedRoute>} />
-              <Route path="/learn/:id" element={<ProtectedRoute allowedRoles={['ESTUDANTE']}><LearnCoursePage /></ProtectedRoute>} />
-              <Route path="/student/courses" element={<ProtectedRoute allowedRoles={['ESTUDANTE']}><StudentDashboardPage /></ProtectedRoute>} />
+              <Route path="/learn/:id" element={<ProtectedRoute allowedRoles={['ESTUDANTE', 'PROFESSOR']}><LearnCoursePage /></ProtectedRoute>} />
 
               {/* Admin routes */}
               <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboardPage /></ProtectedRoute>} />

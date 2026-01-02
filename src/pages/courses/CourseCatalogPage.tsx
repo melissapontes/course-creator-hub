@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,7 +31,7 @@ const CATEGORIES = [
   'Saúde',
   'Idiomas',
   'Outros',
-];
+] as const;
 
 const DATE_FILTERS = [
   { value: 'all', label: 'Qualquer data' },
@@ -40,14 +40,14 @@ const DATE_FILTERS = [
   { value: 'month', label: 'Último mês' },
   { value: '3months', label: 'Últimos 3 meses' },
   { value: 'year', label: 'Último ano' },
-];
+] as const;
 
 const SORT_OPTIONS = [
   { value: 'recent', label: 'Mais recentes' },
   { value: 'oldest', label: 'Mais antigos' },
   { value: 'title_asc', label: 'Título (A-Z)' },
   { value: 'title_desc', label: 'Título (Z-A)' },
-];
+] as const;
 
 type CourseWithInstructor = {
   id: string;
@@ -80,91 +80,72 @@ export default function CourseCatalogPage() {
   const [level, setLevel] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
-  const [instructorNames, setInstructorNames] = useState<Record<string, string>>({});
-  const [courseRatings, setCourseRatings] = useState<Record<string, CourseRating>>({});
 
   // Use DashboardLayout if user is logged in, otherwise PublicLayout
   const Layout = authUser ? DashboardLayout : PublicLayout;
 
-  const { data: courses, isLoading } = useQuery({
-    queryKey: ['public-courses'],
+  // Consolidated query for courses with instructor names and ratings
+  const { data: coursesData, isLoading } = useQuery({
+    queryKey: ['public-courses-catalog'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch courses
+      const { data: courses, error: coursesError } = await supabase
         .from('courses')
         .select('*')
         .eq('status', 'PUBLICADO')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data as CourseWithInstructor[];
-    },
-  });
+      if (coursesError) throw coursesError;
+      if (!courses || courses.length === 0) return { courses: [], instructorNames: {}, courseRatings: {} };
 
-  // Fetch instructor names from profiles table
-  useEffect(() => {
-    if (!courses || courses.length === 0) return;
-
-    const instructorIds = [...new Set(courses.map(c => c.instructor_id))];
-    
-    const fetchInstructors = async () => {
-      const { data } = await supabase
+      // Fetch instructor names
+      const instructorIds = [...new Set(courses.map(c => c.instructor_id))];
+      const { data: instructors } = await supabase
         .from('profiles')
         .select('id, full_name')
         .in('id', instructorIds);
 
-      if (data) {
-        const names: Record<string, string> = {};
-        data.forEach(p => {
-          names[p.id] = p.full_name;
-        });
-        setInstructorNames(names);
-      }
-    };
+      const instructorNames: Record<string, string> = {};
+      instructors?.forEach(p => {
+        instructorNames[p.id] = p.full_name;
+      });
 
-    fetchInstructors();
-  }, [courses]);
-
-  // Fetch course ratings
-  useEffect(() => {
-    if (!courses || courses.length === 0) return;
-
-    const fetchRatings = async () => {
+      // Fetch ratings
       const courseIds = courses.map(c => c.id);
-      const { data } = await supabase
+      const { data: ratings } = await supabase
         .from('course_ratings')
         .select('course_id, rating')
         .in('course_id', courseIds);
 
-      if (data) {
-        const ratingsMap: Record<string, CourseRating> = {};
-        
-        // Group ratings by course_id
+      const courseRatings: Record<string, CourseRating> = {};
+      if (ratings) {
         const grouped: Record<string, number[]> = {};
-        data.forEach(r => {
+        ratings.forEach(r => {
           if (!grouped[r.course_id]) grouped[r.course_id] = [];
           grouped[r.course_id].push(r.rating);
         });
 
-        // Calculate averages
-        Object.entries(grouped).forEach(([courseId, ratings]) => {
-          const average = ratings.reduce((a, b) => a + b, 0) / ratings.length;
-          ratingsMap[courseId] = { course_id: courseId, average, count: ratings.length };
+        Object.entries(grouped).forEach(([courseId, ratingsList]) => {
+          const average = ratingsList.reduce((a, b) => a + b, 0) / ratingsList.length;
+          courseRatings[courseId] = { course_id: courseId, average, count: ratingsList.length };
         });
-
-        setCourseRatings(ratingsMap);
       }
-    };
 
-    fetchRatings();
-  }, [courses]);
+      return { courses: courses as CourseWithInstructor[], instructorNames, courseRatings };
+    },
+  });
 
-  const formatPrice = (price: number | null) => {
+  const courses = coursesData?.courses || [];
+  const instructorNames = coursesData?.instructorNames || {};
+  const courseRatings = coursesData?.courseRatings || {};
+
+  const formatPrice = useCallback((price: number | null) => {
     if (price === null || price === 0) return 'Grátis';
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     }).format(price);
-  };
+  }, []);
 
   const filteredAndSortedCourses = useMemo(() => {
     if (!courses) return [];

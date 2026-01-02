@@ -11,6 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, Save, Upload, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { z } from 'zod';
+
+const profileSchema = z.object({
+  full_name: z.string().trim().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100, 'Nome deve ter no máximo 100 caracteres'),
+});
 
 export default function ProfilePage() {
   const { authUser, refreshUser } = useAuth();
@@ -90,10 +95,13 @@ export default function ProfilePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profileData.full_name.trim()) {
-      toast.error('O nome completo é obrigatório');
+    
+    const validation = profileSchema.safeParse({ full_name: profileData.full_name });
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message);
       return;
     }
+    
     updateProfile.mutate();
   };
 
