@@ -1,20 +1,8 @@
-export type AppRole = 'PROFESSOR' | 'ESTUDANTE' | 'ADMIN';
+// Re-export from new Clean Architecture location
+// This file is kept for backward compatibility
+
+export type { AppRole } from '@/features/auth/domain/entities/User';
+export type { AuthUser, UserProfile } from '@/features/auth/presentation/context/AuthContext';
+
+// Legacy type alias
 export type UserStatus = 'ATIVO' | 'BLOQUEADO';
-
-export interface UserProfile {
-  id: string;
-  full_name: string;
-  email: string;
-  avatar_url: string | null;
-  status: UserStatus;
-  role: AppRole;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AuthUser {
-  id: string;
-  email: string;
-  role: AppRole;
-  profile: UserProfile;
-}
