@@ -262,7 +262,7 @@ export default function LearnCoursePage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(isOwner ? '/teacher/courses' : '/student')}
+            onClick={() => navigate(isOwner ? '/teacher' : '/student')}
             className="shrink-0"
           >
             <ChevronLeft className="w-5 h-5" />
