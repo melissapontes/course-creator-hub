@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { PlusCircle, BookOpen, MoreVertical, Edit, Eye, EyeOff, Trash2, Layers } from 'lucide-react';
+import { PlusCircle, BookOpen, MoreVertical, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import {
@@ -175,18 +175,11 @@ export default function TeacherCoursesPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link to={`/teacher/courses/${course.id}/edit`}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar Curso
+                          <Link to={`/learn/${course.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Ver Curso
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link to={`/teacher/courses/${course.id}/curriculum`}>
-                            <Layers className="mr-2 h-4 w-4" />
-                            Gerenciar Conteúdo
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() =>
                             toggleStatus.mutate({ id: course.id, currentStatus: course.status })
