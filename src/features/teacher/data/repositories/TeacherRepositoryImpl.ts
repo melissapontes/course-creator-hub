@@ -2,7 +2,7 @@
 
 import { ITeacherRepository } from '../../domain/repositories/ITeacherRepository';
 import { SupabaseTeacherDataSource } from '../datasources/SupabaseTeacherDataSource';
-import { TeacherCourse, TeacherSalesData } from '../../domain/entities';
+import { TeacherCourse, TeacherSalesData, CourseComment } from '../../domain/entities';
 
 export class TeacherRepositoryImpl implements ITeacherRepository {
   constructor(private readonly dataSource: SupabaseTeacherDataSource) {}
@@ -21,5 +21,13 @@ export class TeacherRepositoryImpl implements ITeacherRepository {
 
   async deleteCourse(courseId: string): Promise<void> {
     return this.dataSource.deleteCourse(courseId);
+  }
+
+  async getCourseComments(courseId: string): Promise<CourseComment[]> {
+    return this.dataSource.getCourseComments(courseId);
+  }
+
+  async deleteComment(commentId: string): Promise<void> {
+    return this.dataSource.deleteComment(commentId);
   }
 }

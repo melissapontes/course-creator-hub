@@ -1,7 +1,7 @@
 // Supabase Teacher Data Source Implementation
 
 import { supabase } from '@/integrations/supabase/client';
-import { TeacherCourse, TeacherSalesData } from '../../domain/entities';
+import { TeacherCourse, TeacherSalesData, CourseComment } from '../../domain/entities';
 
 export class SupabaseTeacherDataSource {
   async getTeacherCourses(instructorId: string): Promise<TeacherCourse[]> {
@@ -73,6 +73,79 @@ export class SupabaseTeacherDataSource {
 
   async deleteCourse(courseId: string): Promise<void> {
     const { error } = await supabase.from('courses').delete().eq('id', courseId);
+    if (error) throw error;
+  }
+
+  async getCourseComments(courseId: string): Promise<CourseComment[]> {
+    // Get all sections for this course
+    const { data: sections, error: sectionsError } = await supabase
+      .from('sections')
+      .select('id, title')
+      .eq('course_id', courseId);
+
+    if (sectionsError) throw sectionsError;
+    if (!sections?.length) return [];
+
+    const sectionIds = sections.map((s) => s.id);
+    const sectionMap = new Map(sections.map((s) => [s.id, s.title]));
+
+    // Get all lessons for these sections
+    const { data: lessons, error: lessonsError } = await supabase
+      .from('lessons')
+      .select('id, title, section_id')
+      .in('section_id', sectionIds);
+
+    if (lessonsError) throw lessonsError;
+    if (!lessons?.length) return [];
+
+    const lessonIds = lessons.map((l) => l.id);
+    const lessonMap = new Map(lessons.map((l) => [l.id, { title: l.title, sectionId: l.section_id }]));
+
+    // Get all comments for these lessons
+    const { data: comments, error: commentsError } = await supabase
+      .from('lesson_comments')
+      .select('*')
+      .in('lesson_id', lessonIds)
+      .order('created_at', { ascending: false });
+
+    if (commentsError) throw commentsError;
+    if (!comments?.length) return [];
+
+    // Get user profiles
+    const userIds = [...new Set(comments.map((c) => c.user_id))];
+    const { data: profiles } = await supabase.from('profiles').select('id, full_name, avatar_url').in('id', userIds);
+    const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
+
+    // Map comments to CourseComment entities
+    const allComments = comments.map((c) => {
+      const lessonInfo = lessonMap.get(c.lesson_id);
+      const profile = profileMap.get(c.user_id);
+      return {
+        id: c.id,
+        content: c.content,
+        userId: c.user_id,
+        userName: profile?.full_name || 'Usuário',
+        userAvatar: profile?.avatar_url || null,
+        lessonId: c.lesson_id,
+        lessonTitle: lessonInfo?.title || 'Aula',
+        sectionTitle: lessonInfo?.sectionId ? (sectionMap.get(lessonInfo.sectionId) || 'Seção') : 'Seção',
+        parentId: c.parent_id,
+        createdAt: c.created_at,
+      };
+    });
+
+    // Organize into threads
+    const rootComments = allComments.filter((c) => !c.parentId);
+    const replies = allComments.filter((c) => c.parentId);
+
+    return rootComments.map((comment) => ({
+      ...comment,
+      replies: replies.filter((r) => r.parentId === comment.id),
+    }));
+  }
+
+  async deleteComment(commentId: string): Promise<void> {
+    const { error } = await supabase.from('lesson_comments').delete().eq('id', commentId);
     if (error) throw error;
   }
 }
