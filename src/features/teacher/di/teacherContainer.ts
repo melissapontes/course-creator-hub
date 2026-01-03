@@ -1,7 +1,11 @@
 // Dependency Injection Container for Teacher Feature
 
 import { ITeacherRepository } from '../domain/repositories';
-import { GetTeacherDashboardUseCase } from '../domain/usecases';
+import { 
+  GetTeacherDashboardUseCase, 
+  GetCourseCommentsUseCase,
+  DeleteCommentUseCase,
+} from '../domain/usecases';
 import { SupabaseTeacherDataSource } from '../data/datasources';
 import { TeacherRepositoryImpl } from '../data/repositories';
 
@@ -28,6 +32,14 @@ export function getTeacherRepository(): ITeacherRepository {
 // Use Cases Factory
 export function createGetTeacherDashboardUseCase(): GetTeacherDashboardUseCase {
   return new GetTeacherDashboardUseCase(getTeacherRepository());
+}
+
+export function createGetCourseCommentsUseCase(): GetCourseCommentsUseCase {
+  return new GetCourseCommentsUseCase(getTeacherRepository());
+}
+
+export function createDeleteCommentUseCase(): DeleteCommentUseCase {
+  return new DeleteCommentUseCase(getTeacherRepository());
 }
 
 // Reset function for testing

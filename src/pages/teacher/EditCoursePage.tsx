@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Loader2, Save, Eye, EyeOff, Layers, Upload, Image, X, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Eye, EyeOff, Layers, Upload, Image, X, MessageCircle, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
@@ -231,7 +231,13 @@ export default function EditCoursePage() {
               <h1 className="text-3xl font-display font-bold text-foreground">Editar Curso</h1>
               <p className="text-muted-foreground mt-1">{course.title}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Link to={`/learn/${id}`}>
+                <Button variant="default">
+                  <Play className="mr-2 h-4 w-4" />
+                  Ver como Aluno
+                </Button>
+              </Link>
               <Link to={`/teacher/courses/${id}/curriculum`}>
                 <Button variant="outline">
                   <Layers className="mr-2 h-4 w-4" />

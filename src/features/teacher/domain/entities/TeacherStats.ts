@@ -25,3 +25,17 @@ export interface TeacherCourse {
   salesCount: number;
   createdAt: string;
 }
+
+export interface CourseComment {
+  id: string;
+  content: string;
+  userId: string;
+  userName: string;
+  userAvatar: string | null;
+  lessonId: string;
+  lessonTitle: string;
+  sectionTitle: string;
+  parentId: string | null;
+  createdAt: string;
+  replies?: CourseComment[];
+}

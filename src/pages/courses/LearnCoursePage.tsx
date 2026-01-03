@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { VideoPlayer } from '@/components/lesson/VideoPlayer';
 import { LessonSidebar } from '@/components/lesson/LessonSidebar';
 import { LessonCommentsSection } from '@/components/lesson/LessonCommentsSection';
@@ -23,6 +24,9 @@ import {
   MessageCircle,
   Info,
   HelpCircle,
+  Edit,
+  Settings,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -254,17 +258,48 @@ export default function LearnCoursePage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/student')}
+            onClick={() => navigate(accessData?.isOwner ? '/teacher/courses' : '/student')}
             className="shrink-0"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <div className="hidden sm:block">
-            <h1 className="font-medium text-foreground line-clamp-1">{course?.title}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="font-medium text-foreground line-clamp-1">{course?.title}</h1>
+              {accessData?.isOwner && (
+                <Badge variant="secondary" className="text-xs">
+                  <Eye className="w-3 h-3 mr-1" />
+                  Modo Professor
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Professor Controls */}
+          {accessData?.isOwner && (
+            <>
+              <Link to={`/teacher/courses/${courseId}/edit`}>
+                <Button variant="outline" size="sm" className="hidden sm:flex">
+                  <Edit className="w-4 h-4 mr-2" />
+                  Editar Curso
+                </Button>
+              </Link>
+              <Link to={`/teacher/courses/${courseId}/curriculum`}>
+                <Button variant="outline" size="sm" className="hidden sm:flex">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Gerenciar Conteúdo
+                </Button>
+              </Link>
+              <Link to={`/teacher/courses/${courseId}/comments`}>
+                <Button variant="outline" size="sm" className="hidden sm:flex">
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Comentários
+                </Button>
+              </Link>
+            </>
+          )}
           <Button
             variant="ghost"
             size="icon"
