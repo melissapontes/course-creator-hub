@@ -14,6 +14,8 @@ import {
   Menu,
   X,
   Users,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import logoImage from '@/assets/logo.png';
 
@@ -32,6 +34,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -97,17 +100,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 w-64 bg-sidebar text-sidebar-foreground transform transition-transform duration-200 ease-in-out lg:translate-x-0',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          'fixed inset-y-0 left-0 z-40 bg-sidebar text-sidebar-foreground transform transition-all duration-200 ease-in-out lg:translate-x-0',
+          sidebarCollapsed ? 'lg:w-20' : 'lg:w-64',
+          sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full'
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-            <Link to="/" className="flex items-center gap-2">
-              <img src={logoImage} alt="Learning Bridge" className="w-8 h-8 object-contain" />
-              <span className="text-lg font-display font-bold">Learning Bridge</span>
+          <div className="h-16 flex items-center px-4 border-b border-sidebar-border justify-between">
+            <Link to="/" className="flex items-center gap-2 overflow-hidden">
+              <img src={logoImage} alt="Learning Bridge" className="w-8 h-8 object-contain flex-shrink-0" />
+              {!sidebarCollapsed && (
+                <span className="text-lg font-display font-bold whitespace-nowrap">Learning Bridge</span>
+              )}
             </Link>
+            {/* Desktop collapse button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="hidden lg:flex h-8 w-8"
+            >
+              {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </Button>
           </div>
 
           {/* Navigation */}
@@ -119,15 +134,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   key={item.href}
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
+                  title={sidebarCollapsed ? item.label : undefined}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                    sidebarCollapsed && 'lg:justify-center lg:px-2',
                     isActive
                       ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                       : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                   )}
                 >
                   {item.icon}
-                  {item.label}
+                  {!sidebarCollapsed && <span className="lg:block">{item.label}</span>}
+                  {sidebarCollapsed && <span className="lg:hidden">{item.label}</span>}
                 </Link>
               );
             })}
@@ -135,20 +153,37 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* User Section */}
           <div className="p-4 border-t border-sidebar-border">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-sm font-medium">
+            <div className={cn("flex items-center gap-3 mb-3", sidebarCollapsed && "lg:justify-center")}>
+              <div className="w-10 h-10 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-sm font-medium flex-shrink-0">
                 {getInitials()}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{authUser?.profile?.full_name}</p>
-                <p className="text-xs text-sidebar-foreground/60 truncate">{authUser?.email}</p>
-              </div>
+              {!sidebarCollapsed && (
+                <div className="flex-1 min-w-0 lg:block">
+                  <p className="text-sm font-medium truncate">{authUser?.profile?.full_name}</p>
+                  <p className="text-xs text-sidebar-foreground/60 truncate">{authUser?.email}</p>
+                </div>
+              )}
+              {sidebarCollapsed && (
+                <div className="flex-1 min-w-0 lg:hidden">
+                  <p className="text-sm font-medium truncate">{authUser?.profile?.full_name}</p>
+                  <p className="text-xs text-sidebar-foreground/60 truncate">{authUser?.email}</p>
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2">
-              <Link to="/profile" className="flex-1" onClick={() => setSidebarOpen(false)}>
-                <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50">
-                  <User className="w-4 h-4 mr-2" />
-                  Perfil
+            <div className={cn("flex items-center gap-2", sidebarCollapsed && "lg:flex-col")}>
+              <Link to="/profile" className={cn("flex-1", sidebarCollapsed && "lg:w-full")} onClick={() => setSidebarOpen(false)}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  title={sidebarCollapsed ? "Perfil" : undefined}
+                  className={cn(
+                    "w-full text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50",
+                    sidebarCollapsed ? "lg:justify-center lg:px-2" : "justify-start"
+                  )}
+                >
+                  <User className={cn("w-4 h-4", !sidebarCollapsed && "mr-2")} />
+                  {!sidebarCollapsed && <span className="lg:inline">Perfil</span>}
+                  {sidebarCollapsed && <span className="lg:hidden">Perfil</span>}
                 </Button>
               </Link>
               <ThemeToggle />
@@ -157,10 +192,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               variant="ghost"
               size="sm"
               onClick={handleSignOut}
-              className="w-full justify-start mt-2 text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10"
+              title={sidebarCollapsed ? "Sair" : undefined}
+              className={cn(
+                "w-full mt-2 text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10",
+                sidebarCollapsed ? "lg:justify-center lg:px-2" : "justify-start"
+              )}
             >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
+              <LogOut className={cn("w-4 h-4", !sidebarCollapsed && "mr-2")} />
+              {!sidebarCollapsed && <span className="lg:inline">Sair</span>}
+              {sidebarCollapsed && <span className="lg:hidden">Sair</span>}
             </Button>
           </div>
         </div>
@@ -175,8 +215,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       )}
 
       {/* Main Content */}
-      <main className="lg:pl-64 min-h-screen">
-        <div className="pt-16 lg:pt-0">{children}</div>
+      <main className={cn(
+        "min-h-screen transition-all duration-200",
+        sidebarCollapsed ? "lg:pl-20" : "lg:pl-64"
+      )}>
+        <div className="pt-16 lg:pt-0 p-6">{children}</div>
       </main>
     </div>
   );
