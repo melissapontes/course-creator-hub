@@ -4,40 +4,85 @@
 
 ```
 /src
-  /features              # Módulos por domínio (Clean Architecture)
-    /auth                # Feature de Autenticação
-      /domain            # Camada de Domínio
-        /entities        # Entidades e Value Objects
-        /repositories    # Interfaces dos Repositórios
-        /usecases        # Casos de Uso (regras de negócio)
-      /data              # Camada de Dados
-        /datasources     # Fontes de dados (Supabase)
-        /repositories    # Implementações dos Repositórios
-      /presentation      # Camada de Apresentação (MVVM)
-        /viewmodels      # ViewModels (hooks com lógica de apresentação)
-        /views           # Views (componentes React)
-        /context         # Contextos React
-      /di                # Injeção de Dependência
-    /courses             # Feature de Cursos (a refatorar)
-    /users               # Feature de Usuários (a refatorar)
-    /uploads             # Feature de Uploads (a refatorar)
+  /features                    # Módulos por domínio (Clean Architecture)
+    /auth                      # Feature de Autenticação
+      /domain
+        /entities              # User, AuthCredentials, AuthResult
+        /repositories          # IAuthRepository, IUserRepository
+        /usecases              # SignIn, SignUp, SignOut, ResetPassword, UpdateProfile
+      /data
+        /datasources           # SupabaseAuthDataSource, SupabaseUserDataSource
+        /repositories          # AuthRepositoryImpl, UserRepositoryImpl
+      /presentation
+        /viewmodels            # useAuthViewModel, useLoginViewModel, etc.
+        /views                 # LoginPageView, RegisterPageView, etc.
+        /context               # AuthContext (Provider)
+      /di                      # authContainer (DI factory)
+    
+    /courses                   # Feature de Cursos
+      /domain
+        /entities              # Course, Section, Lesson, Enrollment, Rating
+        /repositories          # ICourseRepository, IEnrollmentRepository
+        /usecases              # GetPublishedCourses, GetCourseDetails, etc.
+      /data
+        /datasources           # SupabaseCourseDataSource, SupabaseEnrollmentDataSource
+        /repositories          # CourseRepositoryImpl, EnrollmentRepositoryImpl
+      /di                      # coursesContainer
+    
+    /cart                      # Feature de Carrinho
+      /domain
+        /entities              # CartItem, CartSummary
+        /repositories          # ICartRepository
+        /usecases              # GetCartSummary, AddToCart, Checkout
+      /data
+        /datasources           # SupabaseCartDataSource
+        /repositories          # CartRepositoryImpl
+      /di                      # cartContainer
+    
+    /teacher                   # Feature do Professor
+      /domain
+        /entities              # TeacherStats, TeacherCourse
+        /repositories          # ITeacherRepository
+        /usecases              # GetTeacherDashboard
+      /data
+        /datasources           # SupabaseTeacherDataSource
+        /repositories          # TeacherRepositoryImpl
+      /di                      # teacherContainer
+    
+    /student                   # Feature do Estudante
+      /domain
+        /entities              # StudentStats (re-exports de courses)
+        /usecases              # Re-exports de courses
+      /di                      # Re-exports de courses
+    
+    /admin                     # Feature de Administração
+      /domain
+        /entities              # AdminStats, ProfessorData, StudentData
+        /repositories          # IAdminRepository
+        /usecases              # GetAdminDashboard, GetProfessorsData, etc.
+      /data
+        /datasources           # SupabaseAdminDataSource
+        /repositories          # AdminRepositoryImpl
+      /di                      # adminContainer
   
-  /components            # Componentes reutilizáveis (compartilhados)
-    /layout              # Layouts (Public, Authed, Teacher, Student, Admin)
-    /ui                  # shadcn-ui components
+  /components                  # Componentes reutilizáveis (compartilhados)
+    /layout                    # DashboardLayout, PublicLayout
+    /ui                        # shadcn-ui components
+    /lesson                    # VideoPlayer, LessonSidebar, etc.
+    /cart                      # CartSheet
   
-  /contexts              # Contextos globais (legado - migrar para features)
-  /hooks                 # Hooks globais (legado - migrar para features)
-  /pages                 # Páginas (re-exportam views das features)
-  /lib                   # Utilitários (env, error handling)
-  /integrations          # Integrações externas (Supabase auto-gerado)
-  /types                 # Tipos globais (legado - migrar para features)
+  /contexts                    # Contextos globais (re-exports de features)
+  /hooks                       # Hooks globais
+  /pages                       # Páginas (re-exports de features/views)
+  /lib                         # Utilitários
+  /integrations                # Supabase client (auto-gerado)
+  /types                       # Tipos globais (re-exports de features)
 
 /supabase
-  /migrations            # SQL migrations
-  /functions             # Edge functions
+  /migrations                  # SQL migrations
+  /functions                   # Edge functions
 
-/docs                    # Documentação
+/docs                          # Documentação
 ```
 
 ## Clean Architecture - Camadas
@@ -48,8 +93,7 @@
 - **Use Cases**: Um caso de uso por funcionalidade, encapsulando regras de negócio
 
 ### Data Layer (Dados)
-- **DataSources (Interfaces)**: Contratos para fontes de dados
-- **DataSources (Implementações)**: Implementações usando Supabase
+- **DataSources (Interfaces/Impl)**: Acesso direto às fontes de dados (Supabase)
 - **Repositories (Implementações)**: Implementam interfaces do domínio usando DataSources
 
 ### Presentation Layer (Apresentação - MVVM)
@@ -76,7 +120,7 @@
 - Lovable Cloud (Supabase)
 - React Router v6
 - Zod para validação
-- TanStack Query para cache (onde aplicável)
+- TanStack Query para cache
 
 ## RBAC
 - PROFESSOR: Cria/edita cursos próprios
@@ -86,7 +130,18 @@
 ## RLS
 Todas as tabelas têm Row Level Security ativo com policies por role.
 
-## Fluxo de Dados (Auth Feature)
+## Features Implementadas com Clean Architecture
+
+| Feature | Domain | Data | Presentation | DI |
+|---------|--------|------|--------------|-----|
+| Auth | ✅ | ✅ | ✅ (MVVM) | ✅ |
+| Courses | ✅ | ✅ | Parcial | ✅ |
+| Cart | ✅ | ✅ | Parcial | ✅ |
+| Teacher | ✅ | ✅ | Parcial | ✅ |
+| Student | ✅ | (via courses) | Parcial | ✅ |
+| Admin | ✅ | ✅ | Parcial | ✅ |
+
+## Fluxo de Dados
 
 ```
 View (React Component)
@@ -99,9 +154,27 @@ Repository Interface (IXxxRepository)
     ↓ (injeção de dependência)
 Repository Implementation (XxxRepositoryImpl)
     ↓ orquestração
-DataSource Interface (IXxxDataSource)
-    ↓ (injeção de dependência)
-DataSource Implementation (SupabaseXxxDataSource)
+DataSource (SupabaseXxxDataSource)
     ↓ chamadas de API
 Supabase Client
 ```
+
+## Como Adicionar uma Nova Feature
+
+1. **Domain Layer**
+   - Criar entities em `features/[feature]/domain/entities/`
+   - Definir interfaces de repository em `features/[feature]/domain/repositories/`
+   - Implementar use cases em `features/[feature]/domain/usecases/`
+
+2. **Data Layer**
+   - Criar datasource em `features/[feature]/data/datasources/`
+   - Implementar repository em `features/[feature]/data/repositories/`
+
+3. **DI Layer**
+   - Criar container em `features/[feature]/di/`
+   - Expor factory functions para repositories e use cases
+
+4. **Presentation Layer** (quando aplicável)
+   - Criar viewmodels em `features/[feature]/presentation/viewmodels/`
+   - Criar views em `features/[feature]/presentation/views/`
+   - Criar context se necessário em `features/[feature]/presentation/context/`
