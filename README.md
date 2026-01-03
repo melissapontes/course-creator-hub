@@ -59,6 +59,40 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Vitest (testing)
+
+## Testing
+
+To run tests, add the following scripts to your `package.json`:
+
+```json
+{
+  "scripts": {
+    "test": "vitest",
+    "test:unit": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage"
+  }
+}
+```
+
+Then run:
+
+```sh
+# Run all tests
+npm run test
+
+# Run tests once
+npm run test:unit
+
+# Watch mode
+npm run test:watch
+
+# Coverage report
+npm run test:coverage
+```
+
+See [TESTING.md](./TESTING.md) for complete testing documentation.
 
 ## How can I deploy this project?
 
