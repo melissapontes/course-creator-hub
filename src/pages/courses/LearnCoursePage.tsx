@@ -24,9 +24,7 @@ import {
   MessageCircle,
   Info,
   HelpCircle,
-  Edit,
-  Settings,
-  Eye,
+  Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -83,6 +81,8 @@ export default function LearnCoursePage() {
     enabled: !!courseId && !!user?.id,
   });
 
+  const isOwner = accessData?.isOwner ?? false;
+
   // Fetch course
   const { data: course } = useQuery({
     queryKey: ['learn-course', courseId],
@@ -133,11 +133,11 @@ export default function LearnCoursePage() {
     enabled: !!sections?.length && !!accessData?.hasAccess,
   });
 
-  // Fetch progress
+  // Fetch progress (only for students)
   const { data: progress } = useQuery({
     queryKey: ['lesson-progress', courseId, user?.id],
     queryFn: async () => {
-      if (!lessons?.length) return [];
+      if (!lessons?.length || isOwner) return [];
       const lessonIds = lessons.map(l => l.id);
       const { data, error } = await supabase
         .from('lesson_progress')
@@ -148,30 +148,32 @@ export default function LearnCoursePage() {
       if (error) throw error;
       return data;
     },
-    enabled: !!lessons?.length && !!user?.id,
+    enabled: !!lessons?.length && !!user?.id && !isOwner,
   });
 
   // Set initial lesson
   useEffect(() => {
     if (lessons?.length && !currentLessonId) {
-      // Find first incomplete lesson or default to first
-      const firstIncomplete = lessons.find(
-        l => !progress?.some(p => p.lesson_id === l.id && p.completed)
-      );
-      setCurrentLessonId(firstIncomplete?.id || lessons[0].id);
+      if (isOwner) {
+        setCurrentLessonId(lessons[0].id);
+      } else {
+        const firstIncomplete = lessons.find(
+          l => !progress?.some(p => p.lesson_id === l.id && p.completed)
+        );
+        setCurrentLessonId(firstIncomplete?.id || lessons[0].id);
+      }
     }
-  }, [lessons, progress, currentLessonId]);
+  }, [lessons, progress, currentLessonId, isOwner]);
 
   // Get current lesson
   const currentLesson = lessons?.find(l => l.id === currentLessonId);
 
-  // Toggle completion mutation
+  // Toggle completion mutation (only for students)
   const toggleCompletion = useMutation({
     mutationFn: async (lessonId: string) => {
       const existing = progress?.find(p => p.lesson_id === lessonId);
 
       if (existing) {
-        // Toggle existing
         const { error } = await supabase
           .from('lesson_progress')
           .update({
@@ -181,7 +183,6 @@ export default function LearnCoursePage() {
           .eq('id', existing.id);
         if (error) throw error;
       } else {
-        // Create new
         const { error } = await supabase.from('lesson_progress').insert({
           user_id: user!.id,
           lesson_id: lessonId,
@@ -258,7 +259,7 @@ export default function LearnCoursePage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(accessData?.isOwner ? '/teacher/courses' : '/student')}
+            onClick={() => navigate(isOwner ? '/teacher/courses' : '/student')}
             className="shrink-0"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -266,10 +267,10 @@ export default function LearnCoursePage() {
           <div className="hidden sm:block">
             <div className="flex items-center gap-2">
               <h1 className="font-medium text-foreground line-clamp-1">{course?.title}</h1>
-              {accessData?.isOwner && (
+              {isOwner && (
                 <Badge variant="secondary" className="text-xs">
-                  <Eye className="w-3 h-3 mr-1" />
-                  Modo Professor
+                  <Pencil className="w-3 h-3 mr-1" />
+                  Modo Edição
                 </Badge>
               )}
             </div>
@@ -277,28 +278,14 @@ export default function LearnCoursePage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Professor Controls */}
-          {accessData?.isOwner && (
-            <>
-              <Link to={`/teacher/courses/${courseId}/edit`}>
-                <Button variant="outline" size="sm" className="hidden sm:flex">
-                  <Edit className="w-4 h-4 mr-2" />
-                  Editar Curso
-                </Button>
-              </Link>
-              <Link to={`/teacher/courses/${courseId}/curriculum`}>
-                <Button variant="outline" size="sm" className="hidden sm:flex">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Gerenciar Conteúdo
-                </Button>
-              </Link>
-              <Link to={`/teacher/courses/${courseId}/comments`}>
-                <Button variant="outline" size="sm" className="hidden sm:flex">
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Comentários
-                </Button>
-              </Link>
-            </>
+          {/* Edit Course Button (Owner only) */}
+          {isOwner && (
+            <Link to={`/teacher/courses/${courseId}/edit`}>
+              <Button variant="outline" size="sm" className="hidden sm:flex">
+                <Pencil className="w-4 h-4 mr-2" />
+                Editar Informações
+              </Button>
+            </Link>
           )}
           <Button
             variant="ghost"
@@ -326,7 +313,7 @@ export default function LearnCoursePage() {
                       videoFileUrl={currentLesson.video_file_url}
                       title={currentLesson.title}
                       onComplete={() => {
-                        if (!isCurrentCompleted) {
+                        if (!isOwner && !isCurrentCompleted) {
                           toggleCompletion.mutate(currentLessonId!);
                         }
                       }}
@@ -365,19 +352,30 @@ export default function LearnCoursePage() {
                     <h2 className="text-xl font-semibold text-foreground">
                       {currentLesson?.title || 'Carregando...'}
                     </h2>
+                    {/* Edit lesson button for owner */}
+                    {isOwner && currentLesson && (
+                      <Link to={`/teacher/courses/${courseId}/curriculum?lesson=${currentLesson.id}`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={isCurrentCompleted ? 'secondary' : 'default'}
-                      onClick={() => currentLessonId && toggleCompletion.mutate(currentLessonId)}
-                      disabled={toggleCompletion.isPending}
-                    >
-                      <CheckCircle
-                        className={cn('w-4 h-4 mr-2', isCurrentCompleted && 'text-green-500')}
-                      />
-                      {isCurrentCompleted ? 'Concluída' : 'Marcar como Concluída'}
-                    </Button>
-                  </div>
+                  {/* Only show completion button for students */}
+                  {!isOwner && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={isCurrentCompleted ? 'secondary' : 'default'}
+                        onClick={() => currentLessonId && toggleCompletion.mutate(currentLessonId)}
+                        disabled={toggleCompletion.isPending}
+                      >
+                        <CheckCircle
+                          className={cn('w-4 h-4 mr-2', isCurrentCompleted && 'text-green-500')}
+                        />
+                        {isCurrentCompleted ? 'Concluída' : 'Marcar como Concluída'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Navigation Buttons */}
@@ -442,14 +440,16 @@ export default function LearnCoursePage() {
             sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0'
           )}
         >
-          {sections && lessons && progress && course && (
+          {sections && lessons && course && (
             <LessonSidebar
               sections={sections}
               lessons={lessons}
-              progress={progress}
+              progress={progress || []}
               currentLessonId={currentLessonId || ''}
               onSelectLesson={setCurrentLessonId}
               courseTitle={course.title}
+              isOwner={isOwner}
+              courseId={courseId!}
             />
           )}
         </div>

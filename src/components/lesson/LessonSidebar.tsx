@@ -1,6 +1,8 @@
-import { CheckCircle, Circle, Play, Lock, ChevronDown, ChevronRight } from 'lucide-react';
+import { CheckCircle, Circle, Play, ChevronDown, ChevronRight, Pencil, Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -32,6 +34,8 @@ interface LessonSidebarProps {
   currentLessonId: string;
   onSelectLesson: (lessonId: string) => void;
   courseTitle: string;
+  isOwner?: boolean;
+  courseId?: string;
 }
 
 export function LessonSidebar({
@@ -41,9 +45,10 @@ export function LessonSidebar({
   currentLessonId,
   onSelectLesson,
   courseTitle,
+  isOwner = false,
+  courseId,
 }: LessonSidebarProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(() => {
-    // Auto-expand section containing current lesson
     const currentLesson = lessons.find(l => l.id === currentLessonId);
     return currentLesson ? new Set([currentLesson.section_id]) : new Set();
   });
@@ -83,17 +88,34 @@ export function LessonSidebar({
     <div className="h-full flex flex-col bg-card border-l border-border">
       {/* Course Header */}
       <div className="p-4 border-b border-border">
-        <h2 className="font-semibold text-foreground line-clamp-2 mb-3">{courseTitle}</h2>
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Progresso</span>
-            <span className="font-medium">{progressPercentage}%</span>
-          </div>
-          <Progress value={progressPercentage} className="h-2" />
-          <p className="text-xs text-muted-foreground">
-            {completedCount} de {totalLessons} aulas concluídas
-          </p>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-foreground line-clamp-2 flex-1">{courseTitle}</h2>
+          {isOwner && courseId && (
+            <Link to={`/teacher/courses/${courseId}/curriculum`}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </Link>
+          )}
         </div>
+        {/* Only show progress for students */}
+        {!isOwner && (
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Progresso</span>
+              <span className="font-medium">{progressPercentage}%</span>
+            </div>
+            <Progress value={progressPercentage} className="h-2" />
+            <p className="text-xs text-muted-foreground">
+              {completedCount} de {totalLessons} aulas concluídas
+            </p>
+          </div>
+        )}
+        {isOwner && (
+          <p className="text-xs text-muted-foreground">
+            {totalLessons} aula(s) • {sections.length} seção(ões)
+          </p>
+        )}
       </div>
 
       {/* Curriculum */}
@@ -123,9 +145,23 @@ export function LessonSidebar({
                           Seção {sectionIndex + 1}: {section.title}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {sectionCompleted}/{sectionLessons.length} concluídas
+                          {isOwner 
+                            ? `${sectionLessons.length} aula(s)`
+                            : `${sectionCompleted}/${sectionLessons.length} concluídas`
+                          }
                         </p>
                       </div>
+                      {/* Edit section button for owner */}
+                      {isOwner && courseId && (
+                        <Link 
+                          to={`/teacher/courses/${courseId}/curriculum?section=${section.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        </Link>
+                      )}
                     </div>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -135,9 +171,8 @@ export function LessonSidebar({
                         const isCurrent = lesson.id === currentLessonId;
 
                         return (
-                          <button
+                          <div
                             key={lesson.id}
-                            onClick={() => onSelectLesson(lesson.id)}
                             className={cn(
                               'w-full flex items-start gap-3 p-3 rounded-lg transition-colors text-left',
                               isCurrent
@@ -145,31 +180,47 @@ export function LessonSidebar({
                                 : 'hover:bg-muted/50'
                             )}
                           >
-                            <div className="shrink-0 mt-0.5">
-                              {isCompleted ? (
-                                <CheckCircle className="w-5 h-5 text-green-500" />
-                              ) : isCurrent ? (
-                                <Play className="w-5 h-5 text-primary" />
-                              ) : (
-                                <Circle className="w-5 h-5 text-muted-foreground" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p
-                                className={cn(
-                                  'text-sm line-clamp-2',
-                                  isCurrent ? 'font-medium text-primary' : 'text-foreground'
+                            <button
+                              onClick={() => onSelectLesson(lesson.id)}
+                              className="flex items-start gap-3 flex-1 min-w-0"
+                            >
+                              <div className="shrink-0 mt-0.5">
+                                {!isOwner && isCompleted ? (
+                                  <CheckCircle className="w-5 h-5 text-green-500" />
+                                ) : isCurrent ? (
+                                  <Play className="w-5 h-5 text-primary" />
+                                ) : (
+                                  <Circle className="w-5 h-5 text-muted-foreground" />
                                 )}
-                              >
-                                {lessonIndex + 1}. {lesson.title}
-                              </p>
-                              {lesson.duration_seconds && (
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  {formatDuration(lesson.duration_seconds)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p
+                                  className={cn(
+                                    'text-sm line-clamp-2',
+                                    isCurrent ? 'font-medium text-primary' : 'text-foreground'
+                                  )}
+                                >
+                                  {lessonIndex + 1}. {lesson.title}
                                 </p>
-                              )}
-                            </div>
-                          </button>
+                                {lesson.duration_seconds && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {formatDuration(lesson.duration_seconds)}
+                                  </p>
+                                )}
+                              </div>
+                            </button>
+                            {/* Edit lesson button for owner */}
+                            {isOwner && courseId && (
+                              <Link 
+                                to={`/teacher/courses/${courseId}/curriculum?lesson=${lesson.id}`}
+                                className="shrink-0"
+                              >
+                                <Button variant="ghost" size="icon" className="h-6 w-6">
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                              </Link>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
