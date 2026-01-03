@@ -21,7 +21,6 @@ import ProfilePage from "./pages/ProfilePage";
 import TeacherDashboardPage from "./pages/teacher/TeacherDashboardPage";
 import TeacherCoursesPage from "./pages/teacher/TeacherCoursesPage";
 import NewCoursePage from "./pages/teacher/NewCoursePage";
-import EditCoursePage from "./pages/teacher/EditCoursePage";
 import CurriculumPage from "./pages/teacher/CurriculumPage";
 import CourseCommentsPage from "./pages/teacher/CourseCommentsPage";
 
@@ -78,7 +77,6 @@ const App = () => (
               <Route path="/teacher" element={<ProtectedRoute allowedRoles={['PROFESSOR']}><TeacherDashboardPage /></ProtectedRoute>} />
               <Route path="/teacher/courses" element={<ProtectedRoute allowedRoles={['PROFESSOR']}><TeacherCoursesPage /></ProtectedRoute>} />
               <Route path="/teacher/courses/new" element={<ProtectedRoute allowedRoles={['PROFESSOR']}><NewCoursePage /></ProtectedRoute>} />
-              <Route path="/teacher/courses/:id/edit" element={<ProtectedRoute allowedRoles={['PROFESSOR']}><EditCoursePage /></ProtectedRoute>} />
               <Route path="/teacher/courses/:id/curriculum" element={<ProtectedRoute allowedRoles={['PROFESSOR']}><CurriculumPage /></ProtectedRoute>} />
               <Route path="/teacher/courses/:id/comments" element={<ProtectedRoute allowedRoles={['PROFESSOR']}><CourseCommentsPage /></ProtectedRoute>} />
 

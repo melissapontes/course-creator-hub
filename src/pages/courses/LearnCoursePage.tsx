@@ -13,6 +13,7 @@ import { LessonSidebar } from '@/components/lesson/LessonSidebar';
 import { LessonCommentsSection } from '@/components/lesson/LessonCommentsSection';
 import { LessonTextContent } from '@/components/lesson/LessonTextContent';
 import { LessonQuiz } from '@/components/lesson/LessonQuiz';
+import { CourseInfoEditor } from '@/components/teacher/CourseInfoEditor';
 import {
   BookOpen,
   CheckCircle,
@@ -25,6 +26,7 @@ import {
   Info,
   HelpCircle,
   Pencil,
+  Settings,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -50,6 +52,7 @@ export default function LearnCoursePage() {
   const queryClient = useQueryClient();
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [editInfoOpen, setEditInfoOpen] = useState(false);
 
   // Verify enrollment or course ownership (for professors)
   const { data: accessData, isLoading: accessLoading } = useQuery({
@@ -278,14 +281,17 @@ export default function LearnCoursePage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Edit Course Button (Owner only) */}
+          {/* Edit Course Info Button (Owner only) */}
           {isOwner && (
-            <Link to={`/teacher/courses/${courseId}/edit`}>
-              <Button variant="outline" size="sm" className="hidden sm:flex">
-                <Pencil className="w-4 h-4 mr-2" />
-                Editar Informações
-              </Button>
-            </Link>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="hidden sm:flex"
+              onClick={() => setEditInfoOpen(true)}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Informações
+            </Button>
           )}
           <Button
             variant="ghost"
@@ -454,6 +460,15 @@ export default function LearnCoursePage() {
           )}
         </div>
       </div>
+
+      {/* Course Info Editor Modal */}
+      {isOwner && course && (
+        <CourseInfoEditor
+          open={editInfoOpen}
+          onOpenChange={setEditInfoOpen}
+          course={course}
+        />
+      )}
     </div>
   );
 }
