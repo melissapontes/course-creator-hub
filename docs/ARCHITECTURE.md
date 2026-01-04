@@ -1,147 +1,146 @@
-# Plataforma de Cursos - Arquitetura
+# Arquitetura do EduFlow LMS
 
-## Estrutura de Pastas (Clean Architecture)
+Este documento descreve a arquitetura técnica do projeto, padrões de design e decisões arquiteturais.
+
+## 📐 Visão Geral da Arquitetura
+
+O EduFlow segue **Clean Architecture** combinada com **MVVM (Model-View-ViewModel)** no frontend, garantindo separação de responsabilidades e testabilidade.
 
 ```
-/src
-  /features                    # Módulos por domínio (Clean Architecture)
-    /auth                      # Feature de Autenticação
-      /domain
-        /entities              # User, AuthCredentials, AuthResult
-        /repositories          # IAuthRepository, IUserRepository
-        /usecases              # SignIn, SignUp, SignOut, ResetPassword, UpdateProfile
-      /data
-        /datasources           # SupabaseAuthDataSource, SupabaseUserDataSource
-        /repositories          # AuthRepositoryImpl, UserRepositoryImpl
-      /presentation
-        /viewmodels            # useAuthViewModel, useLoginViewModel, etc.
-        /views                 # LoginPageView, RegisterPageView, etc.
-        /context               # AuthContext (Provider)
-      /di                      # authContainer (DI factory)
-    
-    /courses                   # Feature de Cursos
-      /domain
-        /entities              # Course, Section, Lesson, Enrollment, Rating
-        /repositories          # ICourseRepository, IEnrollmentRepository
-        /usecases              # GetPublishedCourses, GetCourseDetails, etc.
-      /data
-        /datasources           # SupabaseCourseDataSource, SupabaseEnrollmentDataSource
-        /repositories          # CourseRepositoryImpl, EnrollmentRepositoryImpl
-      /di                      # coursesContainer
-    
-    /cart                      # Feature de Carrinho
-      /domain
-        /entities              # CartItem, CartSummary
-        /repositories          # ICartRepository
-        /usecases              # GetCartSummary, AddToCart, Checkout
-      /data
-        /datasources           # SupabaseCartDataSource
-        /repositories          # CartRepositoryImpl
-      /di                      # cartContainer
-    
-    /teacher                   # Feature do Professor
-      /domain
-        /entities              # TeacherStats, TeacherCourse
-        /repositories          # ITeacherRepository
-        /usecases              # GetTeacherDashboard
-      /data
-        /datasources           # SupabaseTeacherDataSource
-        /repositories          # TeacherRepositoryImpl
-      /di                      # teacherContainer
-    
-    /student                   # Feature do Estudante
-      /domain
-        /entities              # StudentStats (re-exports de courses)
-        /usecases              # Re-exports de courses
-      /di                      # Re-exports de courses
-    
-    /admin                     # Feature de Administração
-      /domain
-        /entities              # AdminStats, ProfessorData, StudentData
-        /repositories          # IAdminRepository
-        /usecases              # GetAdminDashboard, GetProfessorsData, etc.
-      /data
-        /datasources           # SupabaseAdminDataSource
-        /repositories          # AdminRepositoryImpl
-      /di                      # adminContainer
-  
-  /components                  # Componentes reutilizáveis (compartilhados)
-    /layout                    # DashboardLayout, PublicLayout
-    /ui                        # shadcn-ui components
-    /lesson                    # VideoPlayer, LessonSidebar, etc.
-    /cart                      # CartSheet
-  
-  /contexts                    # Contextos globais (re-exports de features)
-  /hooks                       # Hooks globais
-  /pages                       # Páginas (re-exports de features/views)
-  /lib                         # Utilitários
-  /integrations                # Supabase client (auto-gerado)
-  /types                       # Tipos globais (re-exports de features)
-
-/supabase
-  /migrations                  # SQL migrations
-  /functions                   # Edge functions
-
-/docs                          # Documentação
+┌─────────────────────────────────────────────────────────────┐
+│                      PRESENTATION                            │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │   Pages     │  │  Components │  │  Contexts/Providers │  │
+│  │  (Views)    │  │    (UI)     │  │   (State Global)    │  │
+│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
+│         └────────────────┼─────────────────────┘              │
+│                          ▼                                    │
+│                   ┌─────────────┐                            │
+│                   │ ViewModels  │ (Hooks com lógica)         │
+│                   │  (Hooks)    │                            │
+│                   └──────┬──────┘                            │
+└──────────────────────────┼──────────────────────────────────┘
+                           │
+┌──────────────────────────┼──────────────────────────────────┐
+│                      DOMAIN                                  │
+│                          ▼                                   │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │  Entities   │  │  Use Cases  │  │ Repository Interfaces│  │
+│  │  (Models)   │  │  (Business) │  │    (Contracts)       │  │
+│  └─────────────┘  └──────┬──────┘  └──────────┬──────────┘  │
+└──────────────────────────┼─────────────────────┼─────────────┘
+                           │                     │
+┌──────────────────────────┼─────────────────────┼─────────────┐
+│                      DATA                      │              │
+│                          ▼                     ▼              │
+│  ┌─────────────────────────────┐  ┌─────────────────────┐   │
+│  │   Repository Implementations │  │    Data Sources     │   │
+│  │      (Adapters)              │  │    (Supabase)       │   │
+│  └─────────────────────────────┘  └─────────────────────┘   │
+└───────────────────────────────────────────────────────────────┘
 ```
 
-## Clean Architecture - Camadas
+## 🏗 Estrutura de Features
 
-### Domain Layer (Domínio)
-- **Entities**: Modelos de domínio puros, sem dependências de framework
-- **Repositories (Interfaces)**: Contratos para acesso a dados
-- **Use Cases**: Um caso de uso por funcionalidade, encapsulando regras de negócio
+Cada feature segue o padrão Clean Architecture:
 
-### Data Layer (Dados)
-- **DataSources (Interfaces/Impl)**: Acesso direto às fontes de dados (Supabase)
-- **Repositories (Implementações)**: Implementam interfaces do domínio usando DataSources
+```
+src/features/{feature}/
+├── data/                      # Camada de Dados
+│   ├── datasources/           # Implementações Supabase
+│   │   ├── IDataSource.ts     # Interface do data source
+│   │   └── SupabaseDS.ts      # Implementação Supabase
+│   └── repositories/          # Implementações de repositório
+│       └── RepositoryImpl.ts
+│
+├── domain/                    # Camada de Domínio (CORE)
+│   ├── entities/              # Entidades e Value Objects
+│   │   ├── User.ts
+│   │   └── index.ts
+│   ├── repositories/          # Interfaces de repositório
+│   │   └── IRepository.ts
+│   └── usecases/              # Casos de uso (regras de negócio)
+│       ├── SignInUseCase.ts
+│       └── index.ts
+│
+├── di/                        # Injeção de Dependência
+│   └── container.ts           # Factory de instâncias
+│
+├── presentation/              # Camada de Apresentação
+│   ├── context/               # Contextos React
+│   ├── viewmodels/            # ViewModels (hooks)
+│   └── views/                 # Componentes de view
+│
+└── index.ts                   # Barrel export
+```
 
-### Presentation Layer (Apresentação - MVVM)
-- **ViewModels**: Hooks React que gerenciam estado e lógica de apresentação
-- **Views**: Componentes React que renderizam UI
-- **Context**: Providers React para estado compartilhado
+## 🎯 Decisões Arquiteturais
 
-### DI Layer (Injeção de Dependência)
-- **Container**: Factory functions que criam e fornecem dependências
-- Singletons para DataSources e Repositories
-- Factory functions para Use Cases
+### 1. Por que Clean Architecture?
 
-## Princípios Aplicados
+| Benefício | Descrição |
+|-----------|-----------|
+| **Testabilidade** | Use cases e lógica de negócio são facilmente testáveis |
+| **Manutenibilidade** | Código organizado por responsabilidade |
+| **Flexibilidade** | Troca de frameworks/libs sem afetar domínio |
+| **Escalabilidade** | Novas features seguem o mesmo padrão |
 
-1. **Baixo Acoplamento**: Camadas comunicam-se através de interfaces
-2. **Alta Coesão**: Cada módulo tem responsabilidade única
-3. **Inversão de Dependência**: Domínio não depende de detalhes de implementação
-4. **Injeção de Dependência**: Dependências são fornecidas, não criadas internamente
-5. **Testabilidade**: Use Cases e Repositories podem ser testados isoladamente
+### 2. Injeção de Dependência
 
-## Stack
-- Vite + React + TypeScript
-- Tailwind CSS + shadcn-ui
-- Lovable Cloud (Supabase)
-- React Router v6
-- Zod para validação
-- TanStack Query para cache
+Utilizamos o padrão **Container** para gerenciar instâncias singleton:
 
-## RBAC
-- PROFESSOR: Cria/edita cursos próprios
-- ESTUDANTE: Visualiza cursos públicos
-- ADMIN: Acesso total (criado manualmente)
+```typescript
+// src/features/auth/di/authContainer.ts
+let authRepository: IAuthRepository | null = null;
 
-## RLS
-Todas as tabelas têm Row Level Security ativo com policies por role.
+export function getAuthRepository(): IAuthRepository {
+  if (!authRepository) {
+    const dataSource = new SupabaseAuthDataSource();
+    authRepository = new AuthRepositoryImpl(dataSource);
+  }
+  return authRepository;
+}
 
-## Features Implementadas com Clean Architecture
+export function createSignInUseCase(): SignInUseCase {
+  return new SignInUseCase(getAuthRepository());
+}
+```
 
-| Feature | Domain | Data | Presentation | DI |
-|---------|--------|------|--------------|-----|
-| Auth | ✅ | ✅ | ✅ (MVVM) | ✅ |
-| Courses | ✅ | ✅ | Parcial | ✅ |
-| Cart | ✅ | ✅ | Parcial | ✅ |
-| Teacher | ✅ | ✅ | Parcial | ✅ |
-| Student | ✅ | (via courses) | Parcial | ✅ |
-| Admin | ✅ | ✅ | Parcial | ✅ |
+### 3. ViewModels como Hooks
 
-## Fluxo de Dados
+Os ViewModels são implementados como hooks React, conectando a UI aos use cases:
+
+```typescript
+export function useAuthViewModel() {
+  const [state, setState] = useState<AuthState>(initialState);
+  
+  const signIn = async (email: string, password: string) => {
+    const useCase = createSignInUseCase();
+    const result = await useCase.execute({ email, password });
+    // ...atualiza estado
+  };
+
+  return { ...state, signIn };
+}
+```
+
+### 4. Separação de Entidades
+
+Entidades de domínio são **puras** e não dependem de frameworks:
+
+```typescript
+// ✅ Correto - Entidade pura
+export interface User {
+  id: string;
+  email: string;
+  role: AppRole;
+}
+
+// ❌ Incorreto - Não misture com Supabase
+export interface User extends SupabaseUser { }
+```
+
+## 📊 Fluxo de Dados
 
 ```
 View (React Component)
@@ -159,7 +158,45 @@ DataSource (SupabaseXxxDataSource)
 Supabase Client
 ```
 
-## Como Adicionar uma Nova Feature
+## 🗂 Módulos do Sistema
+
+| Módulo | Responsabilidade | Status |
+|--------|------------------|--------|
+| `auth` | Autenticação, perfil, roles | ✅ Completo |
+| `courses` | Cursos, seções, aulas, matrículas | ✅ Completo |
+| `cart` | Carrinho de compras, checkout | ✅ Completo |
+| `teacher` | Dashboard e gestão do professor | ✅ Completo |
+| `student` | Dashboard e progresso do estudante | ✅ Completo |
+| `admin` | Gestão administrativa da plataforma | ✅ Completo |
+
+## 🔐 Segurança
+
+### Row Level Security (RLS)
+
+Todas as tabelas críticas possuem RLS habilitado com policies por operação.
+
+### Validação de Papéis
+
+- **Frontend**: `ProtectedRoute` verifica roles
+- **Backend**: RLS + functions `has_role()` e `is_course_owner()`
+- **ADMIN**: Não pode ser auto-registrado (bloqueio por trigger)
+
+## 🎨 Design System
+
+O projeto utiliza um design system baseado em tokens CSS:
+
+```css
+:root {
+  --primary: 222 67% 48%;        /* Azul profundo */
+  --accent: 174 72% 40%;          /* Teal vibrante */
+  --background: 210 20% 98%;
+  --foreground: 222 47% 11%;
+}
+```
+
+Componentes utilizam **exclusivamente** tokens semânticos.
+
+## 📚 Como Adicionar uma Nova Feature
 
 1. **Domain Layer**
    - Criar entities em `features/[feature]/domain/entities/`
@@ -174,7 +211,13 @@ Supabase Client
    - Criar container em `features/[feature]/di/`
    - Expor factory functions para repositories e use cases
 
-4. **Presentation Layer** (quando aplicável)
+4. **Presentation Layer**
    - Criar viewmodels em `features/[feature]/presentation/viewmodels/`
    - Criar views em `features/[feature]/presentation/views/`
-   - Criar context se necessário em `features/[feature]/presentation/context/`
+   - Criar context se necessário
+
+## 📖 Referências
+
+- [Clean Architecture - Robert C. Martin](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
+- [MVVM Pattern](https://learn.microsoft.com/en-us/dotnet/architecture/maui/mvvm)
+- [Supabase Row Level Security](https://supabase.com/docs/guides/auth/row-level-security)
