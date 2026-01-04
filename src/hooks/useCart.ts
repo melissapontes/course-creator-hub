@@ -1,3 +1,17 @@
+/**
+ * @fileoverview Hook de gerenciamento do carrinho de compras
+ * @module hooks/useCart
+ * 
+ * Fornece funcionalidades completas de carrinho:
+ * - Listar itens do carrinho
+ * - Adicionar/remover cursos
+ * - Calcular totais
+ * - Verificar matrículas existentes
+ * 
+ * @example
+ * const { cartItems, addToCart, removeFromCart, subtotal } = useCart();
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';

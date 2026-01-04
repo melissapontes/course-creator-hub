@@ -1,107 +1,180 @@
-# Welcome to your Lovable project
+# EduFlow LMS
 
-## Project info
+> Plataforma de cursos online desenvolvida com React, TypeScript, Vite e Supabase seguindo Clean Architecture.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 📋 Índice
 
-## How can I edit this code?
+- [Visão Geral](#-visão-geral)
+- [Stack Tecnológica](#-stack-tecnológica)
+- [Início Rápido](#-início-rápido)
+- [Estrutura do Projeto](#-estrutura-do-projeto)
+- [Scripts Disponíveis](#-scripts-disponíveis)
+- [Documentação](#-documentação)
+- [Licença](#-licença)
 
-There are several ways of editing your application.
+## 🎯 Visão Geral
 
-**Use Lovable**
+O **EduFlow** é uma plataforma de Learning Management System (LMS) que conecta professores e estudantes. Permite a criação, venda e consumo de cursos online com recursos avançados como:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- 🎓 **Três papéis de usuário**: Estudante, Professor e Administrador
+- 📚 **Gestão de cursos**: Criação, edição, publicação e organização em seções/aulas
+- 🎥 **Múltiplos tipos de conteúdo**: Vídeo (YouTube/upload), texto rico e quizzes
+- 🛒 **Carrinho de compras**: Sistema de compra e matrícula
+- 📊 **Dashboards personalizados**: Para cada papel de usuário
+- 🌓 **Tema claro/escuro**: Design system moderno
+- ✅ **Progresso de aulas**: Tracking de conclusão para estudantes
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🛠 Stack Tecnológica
 
-**Use your preferred IDE**
+| Camada | Tecnologia |
+|--------|------------|
+| **Frontend** | React 18, TypeScript, Vite |
+| **Estilização** | Tailwind CSS, shadcn/ui (Radix) |
+| **Estado** | TanStack Query (React Query) |
+| **Roteamento** | React Router DOM v6 |
+| **Backend** | Lovable Cloud (Supabase) |
+| **Autenticação** | Supabase Auth |
+| **Banco de Dados** | PostgreSQL (via Supabase) |
+| **Armazenamento** | Supabase Storage |
+| **Arquitetura** | Clean Architecture + MVVM |
+| **Testes** | Vitest, Testing Library |
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🚀 Início Rápido
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Pré-requisitos
 
-Follow these steps:
+- Node.js 18+ 
+- npm ou bun
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Instalação
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```bash
+# Clone o repositório
+git clone <repository-url>
+cd eduflow
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Instale as dependências
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Configure as variáveis de ambiente
+cp .env.example .env
+# Edite .env com suas credenciais
+
+# Inicie o servidor de desenvolvimento
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Variáveis de Ambiente
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Crie um arquivo `.env` na raiz do projeto:
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-- Vitest (testing)
-
-## Testing
-
-To run tests, add the following scripts to your `package.json`:
-
-```json
-{
-  "scripts": {
-    "test": "vitest",
-    "test:unit": "vitest run",
-    "test:watch": "vitest --watch",
-    "test:coverage": "vitest run --coverage"
-  }
-}
+```env
+VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sua-anon-key
+VITE_SUPABASE_PROJECT_ID=seu-project-id
 ```
 
-Then run:
+> **Nota**: O projeto Lovable Cloud já configura essas variáveis automaticamente.
 
-```sh
-# Run all tests
+## 📁 Estrutura do Projeto
+
+```
+src/
+├── assets/              # Imagens e recursos estáticos
+├── components/          # Componentes reutilizáveis
+│   ├── ui/              # Componentes shadcn/ui
+│   ├── auth/            # Componentes de autenticação
+│   ├── layout/          # Layouts (Dashboard, Public)
+│   ├── lesson/          # Componentes de aula
+│   ├── cart/            # Componentes de carrinho
+│   └── teacher/         # Componentes do professor
+├── contexts/            # Contextos React (Auth, Theme)
+├── features/            # Features organizadas por Clean Architecture
+│   ├── auth/            # Autenticação
+│   ├── courses/         # Cursos e matrículas
+│   ├── cart/            # Carrinho de compras
+│   ├── teacher/         # Área do professor
+│   ├── student/         # Área do estudante
+│   └── admin/           # Área administrativa
+├── hooks/               # Hooks customizados
+├── integrations/        # Integrações externas (Supabase)
+├── lib/                 # Utilitários
+├── pages/               # Páginas da aplicação
+└── types/               # Tipos TypeScript globais
+
+tests/
+├── unit/                # Testes unitários
+├── helpers/             # Factories e mocks
+└── setup.ts             # Configuração global
+
+docs/                    # Documentação técnica
+supabase/                # Configuração Supabase
+```
+
+## 📜 Scripts Disponíveis
+
+| Script | Descrição |
+|--------|-----------|
+| `npm run dev` | Inicia o servidor de desenvolvimento |
+| `npm run build` | Gera build de produção |
+| `npm run preview` | Visualiza o build de produção |
+| `npm run lint` | Executa o ESLint |
+| `npm run test` | Executa os testes |
+| `npm run test:unit` | Executa apenas testes unitários |
+| `npm run test:watch` | Testes em modo watch |
+| `npm run test:coverage` | Relatório de cobertura |
+
+## 📖 Documentação
+
+Documentação técnica detalhada está disponível na pasta `/docs`:
+
+| Documento | Descrição |
+|-----------|-----------|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitetura e decisões técnicas |
+| [SETUP.md](docs/SETUP.md) | Setup local e ambientes |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deploy e variáveis |
+| [ROUTES.md](docs/ROUTES.md) | Rotas e endpoints |
+| [DATA_MODEL.md](docs/DATA_MODEL.md) | Modelo de dados |
+| [AUTH_RBAC.md](docs/AUTH_RBAC.md) | Autenticação e RBAC |
+| [ERRORS_LOGGING.md](docs/ERRORS_LOGGING.md) | Tratamento de erros |
+| [TESTING.md](TESTING.md) | Testes |
+| [CHANGELOG.md](CHANGELOG.md) | Histórico de mudanças |
+| [MIGRATION_NOTES.md](MIGRATION_NOTES.md) | Notas de migração |
+
+## 🔧 Desenvolvimento
+
+### Como rodar testes
+
+```bash
+# Executar todos os testes
 npm run test
 
-# Run tests once
-npm run test:unit
-
-# Watch mode
+# Modo watch
 npm run test:watch
 
-# Coverage report
+# Com cobertura
 npm run test:coverage
 ```
 
-See [TESTING.md](./TESTING.md) for complete testing documentation.
+### Como adicionar uma nova feature
 
-## How can I deploy this project?
+1. Criar estrutura em `src/features/[nova-feature]/`
+2. Seguir o padrão Clean Architecture (domain → data → di → presentation)
+3. Adicionar testes unitários
+4. Documentar no CHANGELOG.md
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### Deploy
 
-## Can I connect a custom domain to my Lovable project?
+Opção 1: **Lovable** - Clique em Share > Publish
 
-Yes, you can!
+Opção 2: **Vercel** - Conecte o repositório e configure variáveis
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Ver [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) para detalhes.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 📄 Licença
+
+Este projeto é privado e de uso restrito.
+
+---
+
+Desenvolvido com ❤️ usando [Lovable](https://lovable.dev)

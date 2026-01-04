@@ -1,5 +1,10 @@
-// Use Case: Sign In
-// Single responsibility: handle user sign in logic
+/**
+ * @fileoverview Use Case de Login
+ * @module features/auth/domain/usecases/SignInUseCase
+ * 
+ * Responsabilidade única: executar a lógica de autenticação do usuário,
+ * incluindo validação de credenciais e delegação ao repositório.
+ */
 
 import { IAuthRepository } from '../repositories/IAuthRepository';
 import { LoginCredentials, AuthResult, createAuthError } from '../entities';
