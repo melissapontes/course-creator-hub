@@ -492,12 +492,47 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      quiz_options_student: {
+        Row: {
+          id: string | null
+          is_correct: boolean | null
+          option_order: number | null
+          option_text: string | null
+          question_id: string | null
+        }
+        Insert: {
+          id?: string | null
+          is_correct?: never
+          option_order?: number | null
+          option_text?: string | null
+          question_id?: string | null
+        }
+        Update: {
+          id?: string | null
+          is_correct?: never
+          option_order?: number | null
+          option_text?: string | null
+          question_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_completed_quiz: {
+        Args: { _lesson_id: string; _user_id: string }
+        Returns: boolean
       }
       has_role: {
         Args: {
@@ -512,6 +547,10 @@ export type Database = {
       }
       is_lesson_owner: {
         Args: { _lesson_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_quiz_question_owner: {
+        Args: { _question_id: string; _user_id: string }
         Returns: boolean
       }
       is_section_owner: {
