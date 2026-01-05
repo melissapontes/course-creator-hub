@@ -1,6 +1,6 @@
 # Setup do Ambiente de Desenvolvimento
 
-Este documento descreve como configurar o ambiente de desenvolvimento local do EduFlow.
+Este documento descreve como configurar o ambiente de desenvolvimento local do LearnBridge.
 
 ## 📋 Pré-requisitos
 
@@ -18,7 +18,7 @@ Este documento descreve como configurar o ambiente de desenvolvimento local do E
 
 ```bash
 git clone <repository-url>
-cd eduflow
+cd learnbridge
 ```
 
 ### 2. Instale as Dependências

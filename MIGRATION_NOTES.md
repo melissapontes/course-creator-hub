@@ -1,6 +1,6 @@
 # Notas de Migração e Dívida Técnica
 
-Este documento lista riscos conhecidos, pontos frágeis, TODOs e próximos passos para o EduFlow.
+Este documento lista riscos conhecidos, pontos frágeis, TODOs e próximos passos para o LearnBridge.
 
 ## 🚨 Riscos Conhecidos
 

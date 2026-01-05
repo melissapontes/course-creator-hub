@@ -1,6 +1,6 @@
 # Changelog
 
-Histórico de mudanças e evolução do EduFlow LMS.
+Histórico de mudanças e evolução do LearnBridge LMS.
 
 ## Formato
 

@@ -30,7 +30,7 @@ export default function LandingPage() {
             <div className="w-9 h-9 rounded-lg bg-gradient-hero flex items-center justify-center">
               <BookOpen className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-display font-bold text-foreground">EduFlow</span>
+            <span className="text-xl font-display font-bold text-foreground">LearnBridge</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-4">
             <Link to="/courses" className="hidden sm:block">
@@ -92,7 +92,7 @@ export default function LandingPage() {
       <section className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-display font-bold text-foreground mb-4">Por que escolher o EduFlow?</h2>
+            <h2 className="text-3xl font-display font-bold text-foreground mb-4">Por que escolher o LearnBridge?</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Uma plataforma completa para aprender e ensinar
             </p>
@@ -152,7 +152,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="py-8 px-4 border-t border-border">
         <div className="container mx-auto text-center text-muted-foreground text-sm">
-          © {new Date().getFullYear()} EduFlow. Todos os direitos reservados.
+          © {new Date().getFullYear()} LearnBridge. Todos os direitos reservados.
         </div>
       </footer>
     </div>
