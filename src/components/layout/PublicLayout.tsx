@@ -12,7 +12,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       <main className="pt-16">{children}</main>
       <footer className="py-8 px-4 border-t border-border bg-background">
         <div className="container mx-auto text-center text-muted-foreground text-sm">
-          © {new Date().getFullYear()} EduFlow. Todos os direitos reservados.
+          © {new Date().getFullYear()} LearnBridge. Todos os direitos reservados.
         </div>
       </footer>
     </div>
