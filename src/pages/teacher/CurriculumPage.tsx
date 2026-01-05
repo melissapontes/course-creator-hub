@@ -324,7 +324,7 @@ export default function CurriculumPage() {
       <div className="p-6 lg:p-8 max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <Link to={`/teacher/courses/${courseId}/edit`}>
+          <Link to={`/learn/${courseId}`}>
             <Button variant="ghost" className="mb-4">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar ao Curso

@@ -216,7 +216,7 @@ export default function TeacherDashboardPage() {
           ) : courses && courses.length > 0 ? (
             <div className="space-y-4">
               {courses.slice(0, 5).map((course) => (
-                <Link key={course.id} to={`/teacher/courses/${course.id}/edit`}>
+                <Link key={course.id} to={`/learn/${course.id}`}>
                   <Card className="transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
                     <CardContent className="p-4 flex items-center justify-between">
                       <div className="flex items-center gap-4">
