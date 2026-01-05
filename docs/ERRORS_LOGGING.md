@@ -1,6 +1,6 @@
 # Tratamento de Erros e Logging
 
-Este documento descreve as práticas de tratamento de erros e logging do EduFlow.
+Este documento descreve as práticas de tratamento de erros e logging do LearnBridge.
 
 ## 🚨 Tratamento de Erros
 

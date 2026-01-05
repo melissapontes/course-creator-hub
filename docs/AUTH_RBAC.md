@@ -1,10 +1,10 @@
 # Autenticação e Controle de Acesso (RBAC)
 
-Este documento descreve o sistema de autenticação e autorização do EduFlow.
+Este documento descreve o sistema de autenticação e autorização do LearnBridge.
 
 ## 🔐 Visão Geral
 
-O EduFlow utiliza **Supabase Auth** para autenticação e um sistema **RBAC (Role-Based Access Control)** customizado para autorização.
+O LearnBridge utiliza **Supabase Auth** para autenticação e um sistema **RBAC (Role-Based Access Control)** customizado para autorização.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐

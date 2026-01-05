@@ -1,6 +1,6 @@
 # Rotas e Navegação
 
-Este documento mapeia todas as rotas da aplicação EduFlow.
+Este documento mapeia todas as rotas da aplicação LearnBridge.
 
 ## 📍 Mapa de Rotas
 
@@ -116,7 +116,7 @@ Acessíveis sem autenticação:
 A aplicação suporta deep links para reset de senha:
 
 ```
-https://app.eduflow.com/reset-password#access_token=xxx&type=recovery
+https://app.learnbridge.com/reset-password#access_token=xxx&type=recovery
 ```
 
 > **Importante**: Configure o redirect URL no Supabase Auth.

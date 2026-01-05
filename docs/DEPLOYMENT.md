@@ -1,10 +1,10 @@
 # Guia de Deployment
 
-Este documento descreve como fazer deploy do EduFlow em produção.
+Este documento descreve como fazer deploy do LearnBridge em produção.
 
 ## 🚀 Plataformas Suportadas
 
-O EduFlow é uma **Single Page Application (SPA)** e pode ser deployado em:
+O LearnBridge é uma **Single Page Application (SPA)** e pode ser deployado em:
 
 | Plataforma | Recomendado | Notas |
 |------------|-------------|-------|

@@ -1,4 +1,4 @@
-# EduFlow LMS
+# LearnBridge LMS
 
 > Plataforma de cursos online desenvolvida com React, TypeScript, Vite e Supabase seguindo Clean Architecture.
 
@@ -14,7 +14,7 @@
 
 ## 🎯 Visão Geral
 
-O **EduFlow** é uma plataforma de Learning Management System (LMS) que conecta professores e estudantes. Permite a criação, venda e consumo de cursos online com recursos avançados como:
+O **LearnBridge** é uma plataforma de Learning Management System (LMS) que conecta professores e estudantes. Permite a criação, venda e consumo de cursos online com recursos avançados como:
 
 - 🎓 **Três papéis de usuário**: Estudante, Professor e Administrador
 - 📚 **Gestão de cursos**: Criação, edição, publicação e organização em seções/aulas
@@ -51,7 +51,7 @@ O **EduFlow** é uma plataforma de Learning Management System (LMS) que conecta 
 ```bash
 # Clone o repositório
 git clone <repository-url>
-cd eduflow
+cd learnbridge
 
 # Instale as dependências
 npm install

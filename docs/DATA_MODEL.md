@@ -1,6 +1,6 @@
 # Modelo de Dados
 
-Este documento descreve o schema do banco de dados e as entidades de domínio do EduFlow.
+Este documento descreve o schema do banco de dados e as entidades de domínio do LearnBridge.
 
 ## 📊 Diagrama ER
 

@@ -1,10 +1,10 @@
-# Arquitetura do EduFlow LMS
+# Arquitetura do LearnBridge LMS
 
 Este documento descreve a arquitetura técnica do projeto, padrões de design e decisões arquiteturais.
 
 ## 📐 Visão Geral da Arquitetura
 
-O EduFlow segue **Clean Architecture** combinada com **MVVM (Model-View-ViewModel)** no frontend, garantindo separação de responsabilidades e testabilidade.
+O LearnBridge segue **Clean Architecture** combinada com **MVVM (Model-View-ViewModel)** no frontend, garantindo separação de responsabilidades e testabilidade.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
