@@ -318,6 +318,7 @@ export default function LearnCoursePage() {
                       youtubeUrl={currentLesson.youtube_url}
                       videoFileUrl={currentLesson.video_file_url}
                       title={currentLesson.title}
+                      lessonId={currentLesson.id}
                       onComplete={() => {
                         if (!isOwner && !isCurrentCompleted) {
                           toggleCompletion.mutate(currentLessonId!);

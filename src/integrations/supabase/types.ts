@@ -492,38 +492,7 @@ export type Database = {
       }
     }
     Views: {
-      quiz_options_student: {
-        Row: {
-          id: string | null
-          is_correct: boolean | null
-          option_order: number | null
-          option_text: string | null
-          question_id: string | null
-        }
-        Insert: {
-          id?: string | null
-          is_correct?: never
-          option_order?: number | null
-          option_text?: string | null
-          question_id?: string | null
-        }
-        Update: {
-          id?: string | null
-          is_correct?: never
-          option_order?: number | null
-          option_text?: string | null
-          question_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quiz_options_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: false
-            referencedRelation: "quiz_questions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       get_user_role: {

@@ -18,11 +18,13 @@ interface QuizQuestion {
   question_order: number;
 }
 
+// NOTE: is_correct is intentionally optional - we only fetch it AFTER quiz submission
+// to prevent students from seeing correct answers before completing the quiz
 interface QuizOption {
   id: string;
   question_id: string;
   option_text: string;
-  is_correct: boolean;
+  is_correct?: boolean; // Only populated after quiz completion
   option_order: number;
 }
 
@@ -47,6 +49,8 @@ export function LessonQuiz({ lessonId }: Props) {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [showResults, setShowResults] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
+  // Store correct answers only after quiz submission for security
+  const [correctAnswers, setCorrectAnswers] = useState<Record<string, string>>({});
 
   // Fetch questions
   const { data: questions, isLoading: questionsLoading } = useQuery({
@@ -62,15 +66,17 @@ export function LessonQuiz({ lessonId }: Props) {
     },
   });
 
-  // Fetch options
+  // Fetch options - SECURITY: Do NOT select is_correct during quiz taking
+  // This prevents students from inspecting network requests to see answers
   const { data: allOptions } = useQuery({
     queryKey: ['student-quiz-options', lessonId],
     queryFn: async () => {
       if (!questions?.length) return [];
       const questionIds = questions.map(q => q.id);
+      // NOTE: Intentionally NOT fetching is_correct to prevent cheating
       const { data, error } = await supabase
         .from('quiz_options')
-        .select('*')
+        .select('id, question_id, option_text, option_order')
         .in('question_id', questionIds)
         .order('option_order');
       if (error) throw error;
@@ -95,24 +101,57 @@ export function LessonQuiz({ lessonId }: Props) {
     enabled: !!user?.id,
   });
 
-  // Save attempt
-  const saveAttempt = useMutation({
-    mutationFn: async ({ score, total, passed }: { score: number; total: number; passed: boolean }) => {
-      const { error } = await supabase
+  // Submit quiz and get correct answers from server
+  const submitQuiz = useMutation({
+    mutationFn: async (answers: Record<string, string>) => {
+      if (!questions?.length) throw new Error('No questions');
+      
+      // Fetch correct answers only after submission
+      const questionIds = questions.map(q => q.id);
+      const { data: optionsWithAnswers, error: optionsError } = await supabase
+        .from('quiz_options')
+        .select('id, question_id, is_correct')
+        .in('question_id', questionIds)
+        .eq('is_correct', true);
+      
+      if (optionsError) throw optionsError;
+      
+      // Build correct answers map
+      const correctMap: Record<string, string> = {};
+      optionsWithAnswers?.forEach(opt => {
+        correctMap[opt.question_id] = opt.id;
+      });
+      
+      // Calculate score
+      let score = 0;
+      questions.forEach(q => {
+        if (answers[q.id] === correctMap[q.id]) {
+          score++;
+        }
+      });
+      
+      const passed = score >= Math.ceil(questions.length * 0.7);
+      
+      // Save attempt
+      const { error: saveError } = await supabase
         .from('quiz_attempts')
         .upsert({
           user_id: user!.id,
           lesson_id: lessonId,
           score,
-          total_questions: total,
+          total_questions: questions.length,
           passed,
           completed_at: new Date().toISOString(),
         }, {
           onConflict: 'user_id,lesson_id',
         });
-      if (error) throw error;
+      
+      if (saveError) throw saveError;
+      
+      return { score, total: questions.length, passed, correctAnswers: correctMap };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setCorrectAnswers(data.correctAnswers);
       queryClient.invalidateQueries({ queryKey: ['quiz-attempt', lessonId, user?.id] });
     },
   });
@@ -140,12 +179,12 @@ export function LessonQuiz({ lessonId }: Props) {
   const totalQuestions = questions.length;
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
 
+  // Calculate score using stored correct answers (after quiz submission)
   const calculateScore = () => {
     let correct = 0;
     questions.forEach(q => {
       const selectedOptionId = selectedAnswers[q.id];
-      const correctOption = getOptionsForQuestion(q.id).find(o => o.is_correct);
-      if (selectedOptionId === correctOption?.id) {
+      if (selectedOptionId === correctAnswers[q.id]) {
         correct++;
       }
     });
@@ -153,14 +192,16 @@ export function LessonQuiz({ lessonId }: Props) {
   };
 
   const handleSubmit = () => {
-    const score = calculateScore();
-    const passed = score >= Math.ceil(totalQuestions * 0.7); // 70% to pass
-    saveAttempt.mutate({ score, total: totalQuestions, passed });
-    setShowResults(true);
+    submitQuiz.mutate(selectedAnswers, {
+      onSuccess: () => {
+        setShowResults(true);
+      },
+    });
   };
 
   const handleRetry = () => {
     setSelectedAnswers({});
+    setCorrectAnswers({});
     setCurrentQuestionIndex(0);
     setShowResults(false);
     setQuizStarted(true);
@@ -201,11 +242,10 @@ export function LessonQuiz({ lessonId }: Props) {
     );
   }
 
-  // Show results
-  if (showResults) {
-    const score = calculateScore();
-    const percentage = Math.round((score / totalQuestions) * 100);
-    const passed = score >= Math.ceil(totalQuestions * 0.7);
+  // Show results - use data from submitQuiz mutation
+  if (showResults && submitQuiz.data) {
+    const { score, total, passed } = submitQuiz.data;
+    const percentage = Math.round((score / total) * 100);
 
     return (
       <Card>
@@ -226,18 +266,18 @@ export function LessonQuiz({ lessonId }: Props) {
               {passed ? 'Parabéns!' : 'Tente Novamente'}
             </h3>
             <p className="text-muted-foreground mb-3">
-              Você acertou {score} de {totalQuestions} perguntas ({percentage}%)
+              Você acertou {score} de {total} perguntas ({percentage}%)
             </p>
             <Progress value={percentage} className="h-2 mb-4" />
           </div>
 
-          {/* Show all questions with answers */}
+          {/* Show all questions with answers - use correctAnswers from state */}
           <div className="space-y-4">
             {questions.map((q, idx) => {
               const options = getOptionsForQuestion(q.id);
               const selectedId = selectedAnswers[q.id];
-              const correctOption = options.find(o => o.is_correct);
-              const isCorrect = selectedId === correctOption?.id;
+              const correctOptionId = correctAnswers[q.id];
+              const isCorrect = selectedId === correctOptionId;
 
               return (
                 <div key={q.id} className="border rounded-lg p-4">
@@ -250,19 +290,23 @@ export function LessonQuiz({ lessonId }: Props) {
                     <p className="font-medium">{idx + 1}. {q.question}</p>
                   </div>
                   <div className="pl-7 space-y-1">
-                    {options.map(opt => (
-                      <div
-                        key={opt.id}
-                        className={cn(
-                          'text-sm px-2 py-1 rounded',
-                          opt.is_correct && 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
-                          !opt.is_correct && selectedId === opt.id && 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                        )}
-                      >
-                        {opt.is_correct ? '✓ ' : selectedId === opt.id ? '✗ ' : '○ '}
-                        {opt.option_text}
-                      </div>
-                    ))}
+                    {options.map(opt => {
+                      const isThisCorrect = opt.id === correctOptionId;
+                      const isThisSelected = opt.id === selectedId;
+                      return (
+                        <div
+                          key={opt.id}
+                          className={cn(
+                            'text-sm px-2 py-1 rounded',
+                            isThisCorrect && 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+                            !isThisCorrect && isThisSelected && 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                          )}
+                        >
+                          {isThisCorrect ? '✓ ' : isThisSelected ? '✗ ' : '○ '}
+                          {opt.option_text}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -367,9 +411,9 @@ export function LessonQuiz({ lessonId }: Props) {
           ) : (
             <Button
               onClick={handleSubmit}
-              disabled={Object.keys(selectedAnswers).length < totalQuestions || saveAttempt.isPending}
+              disabled={Object.keys(selectedAnswers).length < totalQuestions || submitQuiz.isPending}
             >
-              {saveAttempt.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {submitQuiz.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Finalizar Quiz
             </Button>
           )}
