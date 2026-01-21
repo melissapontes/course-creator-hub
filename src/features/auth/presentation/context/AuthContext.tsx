@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Auth Context - Provides authentication state to the app
 // Uses the AuthViewModel for state management
 
@@ -20,6 +21,7 @@ export interface UserProfile {
 }
 
 export interface AuthUser {
+  [x: string]: any;
   id: string;
   email: string;
   role: AppRole;
