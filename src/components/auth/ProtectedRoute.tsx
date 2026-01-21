@@ -43,5 +43,5 @@ export function ProtectedRoute({
     return <Navigate to={dashboardPath} replace />;
   }
 
-  return <>{children}</>;
+  return children;
 }
