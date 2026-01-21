@@ -31,5 +31,5 @@ export function PublicRoute({ children }: PublicRouteProps) {
     return <Navigate to={dashboardPath} replace />;
   }
 
-  return <>{children}</>;
+  return children;
 }
