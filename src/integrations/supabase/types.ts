@@ -132,13 +132,6 @@ export type Database = {
             foreignKeyName: "courses_instructor_id_fkey"
             columns: ["instructor_id"]
             isOneToOne: false
-            referencedRelation: "instructor_public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "courses_instructor_id_fkey"
-            columns: ["instructor_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -499,59 +492,7 @@ export type Database = {
       }
     }
     Views: {
-      course_ratings_public: {
-        Row: {
-          comment: string | null
-          course_id: string | null
-          created_at: string | null
-          id: string | null
-          rating: number | null
-        }
-        Insert: {
-          comment?: string | null
-          course_id?: string | null
-          created_at?: string | null
-          id?: string | null
-          rating?: number | null
-        }
-        Update: {
-          comment?: string | null
-          course_id?: string | null
-          created_at?: string | null
-          id?: string | null
-          rating?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "course_ratings_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      instructor_public_profiles: {
-        Row: {
-          avatar_url: string | null
-          created_at: string | null
-          full_name: string | null
-          id: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string | null
-          full_name?: string | null
-          id?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string | null
-          full_name?: string | null
-          id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       get_user_role: {

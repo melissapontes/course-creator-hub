@@ -151,8 +151,7 @@ export class AuthRepositoryImpl implements IAuthRepository {
     }
 
     const { data: roleData } = await this.userDataSource.getRoleByUserId(userId);
-    const rawRole = roleData?.role || profile.role;
-    const role = this.normalizeRole(rawRole);
+    const role = (roleData?.role || profile.role) as AppRole;
 
     return {
       id: userId,
@@ -164,27 +163,11 @@ export class AuthRepositoryImpl implements IAuthRepository {
         email: profile.email,
         avatarUrl: profile.avatar_url,
         status: profile.status,
-        role: this.normalizeRole(profile.role),
+        role: profile.role,
         createdAt: profile.created_at,
         updatedAt: profile.updated_at,
       },
     };
-  }
-
-  private normalizeRole(role: string): AppRole {
-    const normalizedRole = role?.toUpperCase();
-    
-    // Map common variations to correct enum values
-    const roleMap: Record<string, AppRole> = {
-      'PROFESSOR': 'PROFESSOR',
-      'TEACHER': 'PROFESSOR',
-      'ESTUDANTE': 'ESTUDANTE',
-      'STUDENT': 'ESTUDANTE',
-      'ADMIN': 'ADMIN',
-      'ADMINISTRATOR': 'ADMIN',
-    };
-
-    return roleMap[normalizedRole] || 'ESTUDANTE';
   }
 
   private mapSession(session: import('@supabase/supabase-js').Session): AuthSession {

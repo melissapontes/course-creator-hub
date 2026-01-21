@@ -2,7 +2,6 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppRole } from '@/types/auth';
 import { Loader2 } from 'lucide-react';
-import { ReactElement } from 'react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -14,7 +13,7 @@ export function ProtectedRoute({
   children, 
   allowedRoles,
   redirectTo = '/login' 
-}: ProtectedRouteProps): ReactElement | null {
+}: ProtectedRouteProps) {
   const { authUser, loading } = useAuth();
   const location = useLocation();
 

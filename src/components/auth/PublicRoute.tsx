@@ -1,13 +1,12 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
-import { ReactElement } from 'react';
 
 interface PublicRouteProps {
   children: React.ReactNode;
 }
 
-export function PublicRoute({ children }: PublicRouteProps): ReactElement | null {
+export function PublicRoute({ children }: PublicRouteProps) {
   const { authUser, loading } = useAuth();
 
   if (loading) {
